@@ -1,0 +1,80 @@
+
+div {
+	font-size: 12px;
+}
+
+label {
+	font-size: 12px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-weight: normal;
+}
+
+hr {
+  border: 0 #ccc solid;
+  border-top-width: 1px;
+  clear: both;
+  height: 0;
+}
+
+
+h1 {
+  font-size: 24px;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 16px;
+}
+
+h4 {
+  font-size: 14px;
+}
+
+h5 {
+  font-size: 12px;
+}
+
+h6 {
+  font-size: 12px;
+}
+
+/* Custom Font Styles */
+
+.posts_title a{
+	text-decoration: none;
+	font-weight: 400;
+}
+
+.description {
+	font-size: 12px;
+	font-style:italic;
+	color:#808080;
+}
+
+.sitename {
+	font-size: 28px;
+	font-weight: bolder;
+}
+
+
+/* `Spacing
+----------------------------------------------------------------------------------------------------*/
+/*
+ol {
+  list-style: decimal;
+}
+
+ul {
+  list-style: disc;
+}
+
+li {
+
+}
+*/
+

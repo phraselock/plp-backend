@@ -1,0 +1,67 @@
+
+
+java --enable-native-access=ALL-UNNAMED -cp "plp-backend.jar:./*" plp.service.Main
+
+
+jar tf plp-backend.jar
+
+./gradlew shadowJar
+
+
+<VirtualHost *:80>
+    ServerName example.com
+
+    ProxyPreserveHost On
+    ProxyRequests Off
+
+    # Weiterleitung an deinen Javalin-Server
+    ProxyPass "/" "http://127.0.0.1:7000/"
+    ProxyPassReverse "/" "http://127.0.0.1:7000/"
+
+    # WICHTIG: Header weiterleiten
+    RequestHeader set X-Forwarded-Proto "http"
+    RequestHeader set X-Forwarded-Port "80"
+    RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
+
+    # Optional: alle eingehenden Header durchlassen
+    ProxyPassReverseCookieDomain 127.0.0.1 example.com
+</VirtualHost>
+
+
+
+import io.javalin.Javalin;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+
+Javalin app = Javalin.create(config -> {
+    config.jetty.modifyServer(server -> {
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+
+        server.getConnectors()[0].getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+              .getHttpConfiguration()
+              .addCustomizer(new ForwardedRequestCustomizer());
+    });
+});
+
+
+import io.javalin.Javalin;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+
+Javalin app = Javalin.create(config -> {
+    config.jetty.modifyServer(server -> {
+        for (var connector : server.getConnectors()) {
+            var connectionFactories = connector.getConnectionFactories();
+            for (var cf : connectionFactories) {
+                if (cf instanceof HttpConnectionFactory http) {
+                    HttpConfiguration httpConfig = http.getHttpConfiguration();
+                    httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+                }
+            }
+        }
+    });
+});
