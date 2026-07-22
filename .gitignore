@@ -45,3 +45,7 @@ plp-server-1.02.jar
 deploy
 .git-old-pre-cleanup/
 .claude/
+keepass.properties
+mqtt.properties
+psono.properties
+service.properties
