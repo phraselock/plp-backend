@@ -24,11 +24,7 @@
 package com.ipoxo.plcore.lib.ns;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * A set is an interface to an unordered collection of objects.
@@ -42,7 +38,7 @@ import java.util.TreeSet;
  */
 public class NSSet extends NSObject {
 
-    private Set<NSObject> set;
+    private final Set<NSObject> set;
 
     private boolean ordered = false;
 
@@ -225,7 +221,7 @@ public class NSSet extends NSObject {
             return false;
         }
         final NSSet other = (NSSet) obj;
-        return !(this.set != other.set && (this.set == null || !this.set.equals(other.set)));
+        return !(!Objects.equals(this.set, other.set));
     }
 
     /**

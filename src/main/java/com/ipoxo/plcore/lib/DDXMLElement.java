@@ -30,27 +30,7 @@ public class DDXMLElement implements Element
   {
     mElement = null;
   }
-  
-  public Document getDoc()
-  {
-    return mElement.getOwnerDocument();
-  }
-  
-  public Node getNode()
-  {
-    return mElement;
-  }
-  
-  public NamedNodeMap getAttr()
-  {
-    return mElement.getAttributes();
-  }
-  
-  public NodeList getNodes()
-  {
-    return mElement.getChildNodes();
-  }
-  
+
   public static Document asDocument(Node n) {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db;
@@ -119,24 +99,7 @@ public class DDXMLElement implements Element
     }
     return null;
   }
-  
-  public static String XMLString(Element element)
-  {
-    try
-    {
-      StringWriter writer = new StringWriter();
-      Transformer transformer = TransformerFactory.newInstance().newTransformer();
-      transformer.transform(new DOMSource(element), new StreamResult(writer));
-      String output = writer.toString();
-      output = output.substring(output.indexOf("?>") + 2);//remove <?xml version="1.0" encoding="UTF-8"?>
-      return output;
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
-    return null;
-  }
-  
+
   public DDXMLElement firstElement(String name)
   {
     try
@@ -155,24 +118,7 @@ public class DDXMLElement implements Element
     return null;
   }
   
-  public String firstElementStringValue(String name)
-  {
-    try
-    {
-      NodeList nodes = mElement.getElementsByTagName(name);
-      int maxN = nodes.getLength();
-      if(maxN>0)
-      {
-        Element ex = (Element) nodes.item(0);
-        return ex.getTextContent();
-      }
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
-    return null;
-  }
-  
+
   public String firstElementStringValue(String name, String defRes)
   {
     try
@@ -216,12 +162,7 @@ public class DDXMLElement implements Element
   {
     return getAttribute(name);
   }
-  
-  public void removeAttributeForName(String name)
-  {
-    removeAttribute(name);
-  }
-  
+
   public int attributeForNameAsInt(String name)
   {
     String sx = attributeForName(name);

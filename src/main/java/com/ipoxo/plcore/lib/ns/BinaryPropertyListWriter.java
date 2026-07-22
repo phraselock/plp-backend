@@ -59,25 +59,22 @@ public class BinaryPropertyListWriter {
         if (root == null) {
             minVersion = VERSION_10;
         }
-        if (root instanceof NSDictionary) {
-            NSDictionary dict = (NSDictionary) root;
-            for (NSObject o : dict.getHashMap().values()) {
+        if (root instanceof NSDictionary dict) {
+          for (NSObject o : dict.getHashMap().values()) {
                 int v = getMinimumRequiredVersion(o);
                 if (v > minVersion)
                     minVersion = v;
             }
-        } else if (root instanceof NSArray) {
-            NSArray array = (NSArray) root;
-            for (NSObject o : array.getArray()) {
+        } else if (root instanceof NSArray array) {
+          for (NSObject o : array.getArray()) {
                 int v = getMinimumRequiredVersion(o);
                 if (v > minVersion)
                     minVersion = v;
             }
-        } else if (root instanceof NSSet) {
+        } else if (root instanceof NSSet set) {
             //Sets are only allowed in property lists v1+
             minVersion = VERSION_10;
-            NSSet set = (NSSet) root;
-            for (NSObject o : set.allObjects()) {
+          for (NSObject o : set.allObjects()) {
                 int v = getMinimumRequiredVersion(o);
                 if (v > minVersion)
                     minVersion = v;
@@ -134,13 +131,13 @@ public class BinaryPropertyListWriter {
     private int version = VERSION_00;
 
     // raw output stream to result file
-    private OutputStream out;
+    private final OutputStream out;
 
     // # of bytes written so far
     private long count;
 
     // map from object to its ID
-    private Map<NSObject, Integer> idMap = new HashMap<NSObject, Integer>();
+    private final Map<NSObject, Integer> idMap = new HashMap<NSObject, Integer>();
     private int idSizeInBytes;
 
     /**

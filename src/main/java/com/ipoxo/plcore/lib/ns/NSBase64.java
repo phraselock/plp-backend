@@ -745,11 +745,11 @@ public class NSBase64 {
 
         // Return value according to relevant encoding.
         try {
-            return new String(baos.toByteArray(), PREFERRED_ENCODING);
+            return baos.toString(PREFERRED_ENCODING);
         }   // end try
         catch (java.io.UnsupportedEncodingException uue) {
             // Fall back to some Java default
-            return new String(baos.toByteArray());
+            return baos.toString();
         }   // end catch
 
     }   // end encode
@@ -1705,15 +1705,15 @@ public class NSBase64 {
      */
     public static class B64InputStream extends java.io.FilterInputStream {
 
-        private boolean encode;         // Encoding or decoding
+        private final boolean encode;         // Encoding or decoding
         private int position;       // Current position in the buffer
-        private byte[] buffer;         // Small buffer holding converted data
-        private int bufferLength;   // Length of buffer (3 or 4)
+        private final byte[] buffer;         // Small buffer holding converted data
+        private final int bufferLength;   // Length of buffer (3 or 4)
         private int numSigBytes;    // Number of meaningful bytes in the buffer
         private int lineLength;
-        private boolean breakLines;     // Break lines at less than 80 characters
-        private int options;        // Record options used to create the stream.
-        private byte[] decodabet;      // Local copies to avoid extra method calls
+        private final boolean breakLines;     // Break lines at less than 80 characters
+        private final int options;        // Record options used to create the stream.
+        private final byte[] decodabet;      // Local copies to avoid extra method calls
 
 
         /**
@@ -1916,16 +1916,16 @@ public class NSBase64 {
      */
     public static class B64OutputStream extends java.io.FilterOutputStream {
 
-        private boolean encode;
+        private final boolean encode;
         private int position;
         private byte[] buffer;
-        private int bufferLength;
+        private final int bufferLength;
         private int lineLength;
-        private boolean breakLines;
-        private byte[] b4;         // Scratch used in a few places
+        private final boolean breakLines;
+        private final byte[] b4;         // Scratch used in a few places
         private boolean suspendEncoding;
-        private int options;    // Record for later
-        private byte[] decodabet;  // Local copies to avoid extra method calls
+        private final int options;    // Record for later
+        private final byte[] decodabet;  // Local copies to avoid extra method calls
 
         /**
          * Constructs a {@link com.dd.plist.Base64.B64OutputStream} in ENCODE mode.

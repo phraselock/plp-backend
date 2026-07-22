@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -225,7 +226,7 @@ public class PropertyListParser {
      * @throws IOException When an error occurs during the writing process.
      */
     public static void saveAsXML(NSObject root, OutputStream out) throws IOException {
-        OutputStreamWriter w = new OutputStreamWriter(out, "UTF-8");
+        OutputStreamWriter w = new OutputStreamWriter(out, StandardCharsets.UTF_8);
         w.write(root.toXMLPropertyList());
         w.close();
     }
@@ -290,7 +291,7 @@ public class PropertyListParser {
         File parent = out.getParentFile();
         if (!parent.exists())
             parent.mkdirs();
-        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), "ASCII");
+        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.US_ASCII);
         w.write(root.toASCIIPropertyList());
         w.close();
     }
@@ -303,7 +304,7 @@ public class PropertyListParser {
      * @throws IOException When an error occurs during the writing process.
      */
     public static void saveAsASCII(NSArray root, File out) throws IOException {
-        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), "ASCII");
+        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.US_ASCII);
         w.write(root.toASCIIPropertyList());
         w.close();
     }
@@ -340,7 +341,7 @@ public class PropertyListParser {
         File parent = out.getParentFile();
         if (!parent.exists())
             parent.mkdirs();
-        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), "ASCII");
+        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.US_ASCII);
         w.write(root.toGnuStepASCIIPropertyList());
         w.close();
     }
@@ -356,7 +357,7 @@ public class PropertyListParser {
         File parent = out.getParentFile();
         if (!parent.exists())
             parent.mkdirs();
-        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), "ASCII");
+        OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.US_ASCII);
         w.write(root.toGnuStepASCIIPropertyList());
         w.close();
     }

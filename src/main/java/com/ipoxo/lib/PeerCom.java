@@ -3,36 +3,15 @@ package com.ipoxo.lib;
 import com.ipoxo.plcore.ctap2ecc.CTAP2EccJava;
 import com.ipoxo.plcore.lib.FCOEM;
 import com.ipoxo.plcore.lib.Log;
-import com.ipoxo.plcore.lib.ns.NSDictionary;
 
 import org.json.JSONObject;
 import plp.handler.MqttService;
-import plp.lib.DB;
-// BESPsono import entfernt — serviceUuid wird als Parameter übergeben
-
-import javax.naming.Context;
 import java.util.*;
 
 public class PeerCom
 {
-  //final public static String pfxCLN   = "DEVCLN-";
-  //final public static  String pfxTKN  = "TKN-";
-  //final public static  String pfxDEV  = "DEV-";
   final public static  String pfxPEER = "PEER-";
   final public static  String pfxBES  = "BES-";
-
-  /* Psono */
-  final public static String MQTT_PEER_DATA_REQUEST_PSONO       = "peer_data_request_psono";
-  final public static String MQTT_PEER_DATA_RESPONSE_PSONO      = "peer_data_response_psono";
-
-  final public static String MQTT_SKEY_NEGO_REQUEST_PSONO       = "skey_nego_request_psono";
-  final public static String MQTT_SKEY_NEGO_RESPONSE_PSONO      = "skey_nego_response_psono";
-
-  final public static String MQTT_FULL_SYNC_REQUEST_PSONO       = "full_sync_request_psono";
-
-  final public static String MQTT_ENC_PAYLOAD_PSONO             = "enc_payload_psono";
-  final public static String MQTT_ENC_PAYLOAD_NEXT_PSONO        = "enc_payload_next_psono";
-  final public static String MQTT_ACK_PAYLOAD_PSONO             = "ack_payload_psono";
 
   /* KDBX */
   final public static String MQTT_PEER_DATA_REQUEST_KDBX       = "peer_data_request_kdbx";
@@ -47,10 +26,24 @@ public class PeerCom
   final public static String MQTT_ENC_PAYLOAD_NEXT_KDBX        = "enc_payload_next_kdbx";
   final public static String MQTT_ACK_PAYLOAD_KDBX             = "ack_payload_kdbx";
 
+  /* Psono */
+  final public static String MQTT_PEER_DATA_REQUEST_PSONO       = "peer_data_request_psono";
+  final public static String MQTT_PEER_DATA_RESPONSE_PSONO      = "peer_data_response_psono";
+
+  final public static String MQTT_SKEY_NEGO_REQUEST_PSONO       = "skey_nego_request_psono";
+  final public static String MQTT_SKEY_NEGO_RESPONSE_PSONO      = "skey_nego_response_psono";
+
+  final public static String MQTT_FULL_SYNC_REQUEST_PSONO       = "full_sync_request_psono";
+
+  final public static String MQTT_ENC_PAYLOAD_PSONO             = "enc_payload_psono";
+  final public static String MQTT_ENC_PAYLOAD_NEXT_PSONO        = "enc_payload_next_psono";
+  final public static String MQTT_ACK_PAYLOAD_PSONO             = "ack_payload_psono";
+
   public List<String> credList;
   public byte[] sessionKey;
   public boolean handshakeComplete;
   public int phraseLidx;
+
   // ---- Singleton Session Store ----
   private static final Map<String, PeerCom> sessionStore = new HashMap<>();
 
@@ -69,88 +62,12 @@ public class PeerCom
     return peer;
   }
 
-  public static synchronized void setSession(String peerId, PeerCom session)
-  {
-    sessionStore.put(peerId, session);
-  }
-
   public static synchronized void removeSession(String peerId)
   {
     try {
       sessionStore.remove(peerId);
-    } catch (Exception e)
+    } catch (Exception ignore)
     {}
-  }
-
-
-  private static String getDeviceIDEcc(Context ctx)
-  {
-    try
-    {
-      String d = null;
-      String x = null;
-      String y = null;
-      String defIDEccKey = AESPlnk.ksReadData(ctx, CTAP2EccJava.DEVICE_ID_ECCKEY);
-      if (defIDEccKey == null)
-      {
-        byte[][] eccKey = CTAP2EccJava.createECCKeyASN();
-        d = FCOEM.byteArrayToHexString(eccKey[0]);
-        x = FCOEM.byteArrayToHexString(eccKey[1]);
-        y = FCOEM.byteArrayToHexString(eccKey[2]);
-
-        JSONObject eccKeyDictJSON = new JSONObject();
-        eccKeyDictJSON.put("d", d);
-        eccKeyDictJSON.put("x", x);
-        eccKeyDictJSON.put("y", y);
-
-        AESPlnk.ksWriteData(ctx, CTAP2EccJava.DEVICE_ID_ECCKEY, eccKeyDictJSON.toString());
-        defIDEccKey = AESPlnk.ksReadData(ctx, CTAP2EccJava.DEVICE_ID_ECCKEY);
-      }
-      return defIDEccKey;
-    } catch (Exception e) {}
-    return null;
-  }
-
-  public static byte[] getDeviceIDPrivateKey(Context ctx)
-  {
-    try
-    {
-      String defIDEccKey = getDeviceIDEcc(ctx);
-      if (defIDEccKey != null)
-      {
-        JSONObject eccKeyDictJSON = new JSONObject(defIDEccKey);
-        String d = eccKeyDictJSON.getString("d");
-        if(d!=null)
-        {
-          return FCOEM.hexStringToByteArray(d);
-        }
-      }
-    } catch (Exception e) {}
-    return null;
-  }
-
-  public static byte[][] getDeviceIDPublicKey(Context ctx)
-  {
-    try
-    {
-      String defIDEccKey = getDeviceIDEcc(ctx);
-      if (defIDEccKey != null)
-      {
-        JSONObject eccKeyDictJSON = new JSONObject(defIDEccKey);
-        String x = eccKeyDictJSON.getString("x");
-        String y = eccKeyDictJSON.getString("y");
-        if(x!=null && y!=null)
-        {
-          byte[] bx = FCOEM.hexStringToByteArray(x);
-          byte[] by = FCOEM.hexStringToByteArray(y);
-          byte[][] XY = new byte[2][bx.length];
-          XY[0] = bx;
-          XY[1] = by;
-          return XY;
-        }
-      }
-    } catch (Exception e) {}
-    return null;
   }
 
   public static byte[] buildPeerDataResponse(String peerAdrGUID, String request, JSONObject response)
@@ -188,7 +105,7 @@ public class PeerCom
 
         return jsonPackage.toString().getBytes();
       }
-    } catch (Exception e) {}
+    } catch (Exception ignore) {}
     return null;
   }
 
@@ -230,54 +147,7 @@ public class PeerCom
 
         return jsonPackage.toString().getBytes();
       }
-    } catch (Exception e) {}
-    return null;
-  }
-
-  public static byte[] buildSKeyNegotiationRequest(String peerAdrGUID, String request, String serviceUuid)
-  {
-    try
-    {
-      String sd = MqttService.getInstance().getConfig().getProperty("bes.id.dpriv");
-      String sx = MqttService.getInstance().getConfig().getProperty("bes.id.xpubl");
-      String sy = MqttService.getInstance().getConfig().getProperty("bes.id.ypubl");
-
-      byte[] dPrivateKey = FCOEM.hexStringToByteArray(sd);
-      byte[] dPublicKeyX = FCOEM.hexStringToByteArray(sx);
-      byte[] dPublicKeyY = FCOEM.hexStringToByteArray(sy);
-
-      PeerCom.sessionForPeer(peerAdrGUID).sessionKey = null;
-
-      CTAP2EccJava sign_cecc = new CTAP2EccJava();
-      sign_cecc.initKey(dPublicKeyX, dPublicKeyY, dPrivateKey);
-
-      byte[][] eccKey = CTAP2EccJava.createECCKeyASN();
-      PeerCom.sessionForPeer(peerAdrGUID).sessionKey  = eccKey[0];
-      String publ_x   = FCOEM.byteArrayToHexString(eccKey[1]);
-      String publ_y   = FCOEM.byteArrayToHexString(eccKey[2]);
-
-      JSONObject jsonContent = new JSONObject();
-      jsonContent.put("publ_x", publ_x);
-      jsonContent.put("publ_y", publ_y);
-      String contentB64 = AESPlnk.b64encode2String(jsonContent.toString());
-
-      byte[] hash = CTAP2EccJava.getSHA256(contentB64.getBytes(), contentB64.getBytes().length);
-      byte[] sign = sign_cecc.sign(CTAP2EccJava.generateRandom(32), hash);
-
-      boolean isOk = sign_cecc.verify(sign, hash);
-      if(isOk)
-      {
-        JSONObject jsonPackage = new JSONObject();
-        jsonPackage.put("peer", serviceUuid);
-        jsonPackage.put("request", request);
-        jsonPackage.put("version", "1");
-        jsonPackage.put("hash", FCOEM.byteArrayToHexString(hash));
-        jsonPackage.put("signature", FCOEM.byteArrayToHexString(sign));
-        jsonPackage.put("content", contentB64);
-
-        return jsonPackage.toString().getBytes();
-      }
-    } catch (Exception e) {}
+    } catch (Exception ignore) {}
     return null;
   }
 
@@ -288,9 +158,6 @@ public class PeerCom
       try
       {
         String peer = jsonObject.getString("peer");
-        //String request = jsonObject.getString("request");
-        //String version = jsonObject.getString("version");
-        //String hash = jsonObject.getString("hash");
         String signature = jsonObject.getString("signature");
         String contentb64 = jsonObject.getString("content");
 
@@ -312,7 +179,6 @@ public class PeerCom
           if(jsonContent!=null)
           {
             byte[][] eccKey = CTAP2EccJava.createECCKeyASN();
-            //String nsd = FCOEM.byteArrayToHexString(eccKey[0]);
             String bX = FCOEM.byteArrayToHexString(eccKey[1]);
             String bY = FCOEM.byteArrayToHexString(eccKey[2]);
 
@@ -321,13 +187,8 @@ public class PeerCom
 
             byte[] aX = FCOEM.hexStringToByteArray(publ_x_a);
             byte[] aY = FCOEM.hexStringToByteArray(publ_y_a);
-            /**
-             * In ObjC ist dhExchangeWithRawPeer eine statische Funktion. Hier in Java geht das nicht weil die Funktion
-             * über eine JNI Wrapper aufgerufen wird und das kracht es.
-             */
-            byte[] peerSessionKey =  new CTAP2EccJava().dhExchangeWithRawPeer(false, eccKey[0], aX, aY);
 
-            PeerCom.sessionForPeer(peer).sessionKey = peerSessionKey;
+            PeerCom.sessionForPeer(peer).sessionKey = new CTAP2EccJava().dhExchangeWithRawPeer(false, eccKey[0], aX, aY);
             PeerCom.sessionForPeer(peer).handshakeComplete = true;
             Log.i("PLNK_DEBUG", "(1)Peer SKEY:  " + FCOEM.byteArrayToHexString(PeerCom.sessionForPeer(peer).sessionKey));
 
@@ -377,12 +238,8 @@ public class PeerCom
     try
     {
       String sd = MqttService.getInstance().getConfig().getProperty("bes.id.dpriv");
-      String sx = MqttService.getInstance().getConfig().getProperty("bes.id.xpubl");
-      String sy = MqttService.getInstance().getConfig().getProperty("bes.id.ypubl");
 
       byte[] dPrivateKey = FCOEM.hexStringToByteArray(sd);
-      byte[] dPublicKeyX = FCOEM.hexStringToByteArray(sx);
-      byte[] dPublicKeyY = FCOEM.hexStringToByteArray(sy);
 
       CTAP2EccJava sign_cecc = new CTAP2EccJava();
       sign_cecc.initKey(dPrivateKey);
@@ -405,7 +262,7 @@ public class PeerCom
 
       return jsonPackage.toString().getBytes();
 
-    } catch (Exception e) {}
+    } catch (Exception ignore) {}
     return null;
   }
 
@@ -416,14 +273,11 @@ public class PeerCom
       try
       {
         String peer = jsonObject.getString("peer");
-        //String request = jsonObject.getString("request");
-        //String version = jsonObject.getString("version");
         String iv = jsonObject.getString("iv");
-        //String hash = jsonObject.getString("hash");
         String signature = jsonObject.getString("signature");
         String contentb64 = jsonObject.getString("content");
 
-        // Signatur überprüfen
+        // Signatur verification
         String peer_publ_x = peerDict.getString("publ_x");
         String peer_publ_y = peerDict.getString("publ_y");
         CTAP2EccJava verify_cecc   = new CTAP2EccJava();
@@ -440,7 +294,7 @@ public class PeerCom
           String payload = aes.decryptStringFromB64(contentb64);
           return payload;
         }
-      } catch (Exception e) {}
+      } catch (Exception ignore) {}
     }
     return null;
   }

@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.StringCharacterIterator;
 import java.util.LinkedList;
@@ -179,8 +180,10 @@ public class ASCIIPropertyListParser {
     private boolean accept(char... acceptableSymbols) {
         boolean symbolPresent = false;
         for (char c : acceptableSymbols) {
-            if (data[index] == c)
-                symbolPresent = true;
+          if (data[index] == c) {
+            symbolPresent = true;
+            break;
+          }
         }
         return symbolPresent;
     }
@@ -287,11 +290,7 @@ public class ASCIIPropertyListParser {
     }
 
     private String toUtf8String(ByteArrayOutputStream stream) {
-        try {
-            return stream.toString("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+      return stream.toString(StandardCharsets.UTF_8);
     }
 
     /**

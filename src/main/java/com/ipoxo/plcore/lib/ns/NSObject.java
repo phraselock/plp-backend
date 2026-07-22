@@ -355,7 +355,7 @@ public abstract class NSObject {
             oos.writeObject(o);
             return new NSData(baos.toByteArray());
         } catch (IOException ex) {
-            throw new RuntimeException("The given object of class " + o.getClass().toString() + " could not be serialized and stored in a NSData object.");
+            throw new RuntimeException("The given object of class " + o.getClass() + " could not be serialized and stored in a NSData object.");
         }
     }
 
@@ -401,9 +401,8 @@ public abstract class NSObject {
                 setB.add(o.toJavaObject());
             }
             return setB;
-        } else if(this instanceof NSNumber) {
-            NSNumber num = (NSNumber)this;
-            switch(num.type()) {
+        } else if(this instanceof NSNumber num) {
+          switch(num.type()) {
                 case NSNumber.INTEGER : {
                     long longVal = num.longValue();
                     if(longVal > Integer.MAX_VALUE || longVal < Integer.MIN_VALUE) {

@@ -11,7 +11,7 @@ public class Redis
   {
     try (Jedis jedis = new Jedis("localhost", 6379))
     {
-      // Anlegen
+      // Set
       jedis.sadd(peer, config);
     }
     catch (Exception e)
@@ -24,7 +24,7 @@ public class Redis
   {
     try (Jedis jedis = new Jedis("localhost", 6379))
     {
-      // Lesen
+      // Read
       Set<String> children = jedis.smembers(peer);
       return children;
     }

@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A NSString contains a string.
@@ -144,7 +145,7 @@ public class NSString extends NSObject implements Comparable<Object> {
         //Make sure that the string is encoded in UTF-8 for the XML output
         synchronized (NSString.class) {
             if (utf8Encoder == null)
-                utf8Encoder = Charset.forName("UTF-8").newEncoder();
+                utf8Encoder = StandardCharsets.UTF_8.newEncoder();
             else
                 utf8Encoder.reset();
 
@@ -152,9 +153,9 @@ public class NSString extends NSObject implements Comparable<Object> {
                 ByteBuffer byteBuf = utf8Encoder.encode(CharBuffer.wrap(content));
                 byte[] bytes = new byte[byteBuf.remaining()];
                 byteBuf.get(bytes);
-                content = new String(bytes, "UTF-8");
+                content = new String(bytes, StandardCharsets.UTF_8);
             } catch (Exception ex) {
-                throw new RuntimeException("Could not encode the NSString into UTF-8: " + String.valueOf(ex.getMessage()));
+                throw new RuntimeException("Could not encode the NSString into UTF-8: " + ex.getMessage());
             }
         }
 
@@ -178,7 +179,7 @@ public class NSString extends NSObject implements Comparable<Object> {
         ByteBuffer byteBuf;
         synchronized (NSString.class) {
             if (asciiEncoder == null)
-                asciiEncoder = Charset.forName("ASCII").newEncoder();
+                asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
             else
                 asciiEncoder.reset();
 
@@ -187,7 +188,7 @@ public class NSString extends NSObject implements Comparable<Object> {
                 byteBuf = asciiEncoder.encode(charBuf);
             } else {
                 if (utf16beEncoder == null)
-                    utf16beEncoder = Charset.forName("UTF-16BE").newEncoder();
+                    utf16beEncoder = StandardCharsets.UTF_16BE.newEncoder();
                 else
                     utf16beEncoder.reset();
 

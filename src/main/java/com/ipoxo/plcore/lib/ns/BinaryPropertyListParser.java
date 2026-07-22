@@ -117,7 +117,7 @@ public class BinaryPropertyListParser {
         // 2.0 - Snow Lion
 
         if (majorVersion > 0) {
-            throw new IllegalArgumentException("Unsupported binary property list format: v" + majorVersion + "" + minorVersion + ". " +
+            throw new IllegalArgumentException("Unsupported binary property list format: v" + majorVersion + minorVersion + ". " +
                     "Version 1.0 and later are not yet supported.");
         }
 
@@ -312,7 +312,7 @@ public class BinaryPropertyListParser {
                 int length = lenAndoffset[0];
                 int arrayoffset = lenAndoffset[1];
 
-                if (length * objectRefSize > Runtime.getRuntime().freeMemory()) {
+                if ((long) length * objectRefSize > Runtime.getRuntime().freeMemory()) {
                     throw new OutOfMemoryError("To little heap space available!");
                 }
                 NSArray array = new NSArray(length);
@@ -331,7 +331,7 @@ public class BinaryPropertyListParser {
                 int length = lenAndoffset[0];
                 int contentOffset = lenAndoffset[1];
 
-                if (length * objectRefSize > Runtime.getRuntime().freeMemory()) {
+                if ((long) length * objectRefSize > Runtime.getRuntime().freeMemory()) {
                     throw new OutOfMemoryError("To little heap space available!");
                 }
                 NSSet set = new NSSet(true);
@@ -349,7 +349,7 @@ public class BinaryPropertyListParser {
                 int length = lenAndoffset[0];
                 int contentOffset = lenAndoffset[1];
 
-                if (length * objectRefSize > Runtime.getRuntime().freeMemory()) {
+                if ((long) length * objectRefSize > Runtime.getRuntime().freeMemory()) {
                     throw new OutOfMemoryError("To little heap space available!");
                 }
                 NSSet set = new NSSet();
@@ -367,7 +367,7 @@ public class BinaryPropertyListParser {
                 int length = lenAndoffset[0];
                 int contentOffset = lenAndoffset[1];
 
-                if (length * 2 * objectRefSize > Runtime.getRuntime().freeMemory()) {
+                if ((long) length * 2 * objectRefSize > Runtime.getRuntime().freeMemory()) {
                     throw new OutOfMemoryError("To little heap space available!");
                 }
                 //System.out.println("Parsing dictionary #"+obj);
