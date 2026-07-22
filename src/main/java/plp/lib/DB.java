@@ -1,9 +1,5 @@
 package plp.lib;
 
-import com.ipoxo.plcore.lib.ns.NSDictionary;
-import com.ipoxo.plcore.lib.ns.NSObject;
-import com.ipoxo.plcore.lib.ns.NSString;
-
 import com.ipoxo.plcore.lib.Log;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,19 +10,6 @@ public class DB {
 
   private static final String DB_NAME             = "phraselockWebAuthn.db";
   private static final int CURRENT_DB_VERSION     = 1;
-
-  public static String getDictStringValue(NSDictionary dict, String key)
-  {
-    if (dict != null) {
-      NSObject v = dict.objectForKey(key);
-      if (v != null) {
-        if (v instanceof NSString) {
-          return v.toString();
-        }
-      }
-    }
-    return null;
-  }
 
   private static Path resolveDbPath() {
     try {
