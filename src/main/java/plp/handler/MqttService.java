@@ -14,16 +14,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class MqttService implements MqttCallback
 {
-  // Für Tests: jedes TLS-Zertifikat akzeptieren, ohne die Chain zu prüfen.
-  // Vor dem Produktiv-Einsatz auf false setzen!
+  // For testing: accept any TLS certificate without validating the chain.
+  // Set to false before production use!
   private static final boolean ACCEPT_ALL_CERTS = true;
 
   private static MqttService instance;
 
-  /** Eingehende MQTT-Message für die inQueue. */
+  /** Incoming MQTT message for the inQueue. */
   public record InMessage(String topic, byte[] payload, int qos) {}
 
-  /** Ausgehende MQTT-Message für die outQueue. */
+  /** Outgoing MQTT message for the outQueue. */
   public record OutMessage(String topic, byte[] payload) {}
 
   private static final int QUEUE_CAPACITY = 500;
@@ -32,7 +32,7 @@ public class MqttService implements MqttCallback
   private final LinkedBlockingQueue<OutMessage> outQueue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
 
   /*
-  // MessageListener — nicht mehr aktiv, BridgeHandler wurde entfernt
+  // MessageListener — no longer active, BridgeHandler was removed
   @FunctionalInterface
   public interface MessageListener
   {
@@ -42,7 +42,7 @@ public class MqttService implements MqttCallback
   public void addMessageListener(MessageListener listener) { listeners.add(listener); }
   */
 
-  // Topic-basiertes Routing — Handler registrieren sich mit ihrem Topic-Präfix
+  // Topic-based routing — handlers register with their topic prefix
   @FunctionalInterface
   public interface TopicHandler
   {
@@ -52,8 +52,8 @@ public class MqttService implements MqttCallback
   private final Map<String, TopicHandler> topicHandlers = new java.util.concurrent.ConcurrentHashMap<>();
 
   /**
-   * Registriert einen Handler für einen Topic-Präfix.
-   * Eingehende Messages deren Topic mit dem Präfix beginnt werden an diesen Handler gerouted.
+   * Registers a handler for a topic prefix.
+   * Incoming messages whose topic starts with the prefix are routed to this handler.
    */
   public void registerTopicHandler(String topicPrefix, TopicHandler handler)
   {
@@ -72,8 +72,8 @@ public class MqttService implements MqttCallback
   private final List<OnConnectedListener> onConnectedListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
   /**
-   * Registriert einen Listener der aufgerufen wird sobald die MQTT-Verbindung steht.
-   * Ist bereits verbunden, wird der Listener sofort aufgerufen.
+   * Registers a listener that is called once the MQTT connection is established.
+   * If already connected, the listener is called immediately.
    */
   public void registerOnConnectedListener(OnConnectedListener listener)
   {
@@ -84,16 +84,16 @@ public class MqttService implements MqttCallback
   private MqttClient client;
   private String brokerUrl = "(nicht verbunden)";
 
-  // Dynamisch registrierte Topics — werden bei Reconnect erneut abonniert
+  // Dynamically registered topics — re-subscribed on reconnect
   private final List<String> subscribedTopics = new java.util.concurrent.CopyOnWriteArrayList<>();
   private MqttConnectionOptions connectOpts;
   private int retryIntervalS = 30;
 
-  // ── Gecachte Config ───────────────────────────────────────────────────────
+  // ── Cached config ─────────────────────────────────────────────────────────
 
   private Properties config;
 
-  /** Liefert die gecachte Config — public damit BESxxx darauf zugreifen können. */
+  /** Returns the cached config — public so BES classes can access it. */
   public Properties getConfig() { return config; }
 
   private MqttService() {}
@@ -143,8 +143,6 @@ public class MqttService implements MqttCallback
       }
     }
 
-//    setupPahoLogging_obsolet();
-
     client = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
     client.setCallback(this);
 
@@ -167,7 +165,7 @@ public class MqttService implements MqttCallback
       if (in != null) props.load(in);
     }
 
-    // 2. Externe Datei (neben der JAR) überschreibt Defaults
+    // 2. External file (next to the JAR) overrides defaults
     java.nio.file.Path external = java.nio.file.Path.of(PROPERTIES);
 
     if (java.nio.file.Files.exists(external))
@@ -181,7 +179,7 @@ public class MqttService implements MqttCallback
     return props;
   }
 
-  /** Consumer-Thread: nimmt Messages aus inQueue und routet sie topic-basiert. */
+  /** Consumer thread: takes messages from inQueue and routes them by topic. */
   private void startConsumerThread()
   {
     Thread.ofVirtual().name("mqtt-consumer").start(() ->
@@ -192,7 +190,7 @@ public class MqttService implements MqttCallback
         {
           InMessage msg = inQueue.take();
 
-          // Prüfe ob ein registrierter TopicHandler zuständig ist
+          // Check if a registered TopicHandler is responsible
           TopicHandler handler = topicHandlers.entrySet().stream()
             .filter(e -> msg.topic().startsWith(e.getKey()))
             .map(Map.Entry::getValue)
@@ -216,7 +214,7 @@ public class MqttService implements MqttCallback
     });
   }
 
-  /** Sender-Thread: nimmt Messages aus outQueue und publiziert sie an den Broker. */
+  /** Sender thread: takes messages from outQueue and publishes them to the broker. */
   private void startSenderThread()
   {
     Thread.ofVirtual().name("mqtt-sender").start(() ->
@@ -240,7 +238,7 @@ public class MqttService implements MqttCallback
     });
   }
 
-  /** Legt eine ausgehende Message in die outQueue. Wird von BES aufgerufen. */
+  /** Puts an outgoing message into the outQueue. Called by BES. */
   public void send(String topic, byte[] payload)
   {
     if (!outQueue.offer(new OutMessage(topic, payload)))
@@ -271,7 +269,7 @@ public class MqttService implements MqttCallback
     });
   }
 
-  /** Abonniert ein Topic und merkt es für automatisches Re-Subscribe bei Reconnect. */
+  /** Subscribes to a topic and tracks it for automatic re-subscribe on reconnect. */
   public void subscribe(String topic) throws MqttException
   {
     if (!subscribedTopics.contains(topic))
@@ -304,7 +302,7 @@ public class MqttService implements MqttCallback
     String type = reconnect ? "Reconnected" : "Connected";
     Log.i("[MQTT] " + type + " to " + serverURI);
 
-    // Listener informieren — beim ersten Connect subscriben sie ihre Topics
+    // Notify listeners — on first connect they subscribe their topics
     if (!reconnect)
       onConnectedListeners.forEach(l -> l.onConnected(this));
 

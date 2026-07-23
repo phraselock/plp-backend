@@ -45,9 +45,9 @@ public class SslHelper {
   }
 
   /**
-   * Wie buildSocketFactory(), aber der Server-Cert wird nicht geprüft —
-   * akzeptiert also auch selbstsignierte Zertifikate. Client-Cert und Key
-   * bleiben aktiv (mTLS bleibt erhalten). Nur für Tests verwenden!
+   * Like buildSocketFactory(), but the server certificate is not validated —
+   * accepts self-signed certificates as well. Client cert and key remain active
+   * (mTLS is preserved). For testing only!
    */
   public static SSLSocketFactory buildSocketFactoryTrustAll(
       String clientCertPath, String clientKeyPath) throws Exception {

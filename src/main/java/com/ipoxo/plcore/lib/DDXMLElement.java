@@ -39,9 +39,7 @@ public class DDXMLElement implements Element
       db = dbf.newDocumentBuilder();
       newDoc = db.newDocument();
       newDoc.appendChild(newDoc.importNode(n, true));
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    } catch (Exception ignore) {}
     return newDoc;
   }
   
@@ -62,7 +60,6 @@ public class DDXMLElement implements Element
   
   public DDXMLElement(Node node)
   {
-    
     mElement = (Element)node;
   }
   
@@ -77,9 +74,7 @@ public class DDXMLElement implements Element
       docBuilder = builderFactory.newDocumentBuilder();
       dx.mElement = (Element) docBuilder.parse(istream).getFirstChild();
       return dx;
-    } catch (Exception e)
-    {
-    }
+    } catch (Exception ignored) {}
     return null;
   }
   
@@ -93,10 +88,7 @@ public class DDXMLElement implements Element
       String output = writer.toString();
       output = output.substring(output.indexOf("?>") + 2);//remove <?xml version="1.0" encoding="UTF-8"?>
       return output;
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
+    } catch (Exception ignore) {}
     return null;
   }
 
@@ -111,13 +103,9 @@ public class DDXMLElement implements Element
         Element ex = (Element) nodes.item(0);
         return new DDXMLElement(ex);
       }
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
+    } catch (Exception ignored) {}
     return null;
   }
-  
 
   public String firstElementStringValue(String name, String defRes)
   {
@@ -130,10 +118,7 @@ public class DDXMLElement implements Element
         Element ex = (Element) nodes.item(0);
         return ex.getTextContent();
       }
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
+    } catch (Exception ignored) {}
     return defRes;
   }
   
@@ -141,12 +126,8 @@ public class DDXMLElement implements Element
   {
     try
     {
-      NodeList nList = mElement.getElementsByTagName(name);
-      return nList;
-    } catch (Exception e)
-    {
-      e.printStackTrace();
-    }
+      return mElement.getElementsByTagName(name);
+    } catch (Exception ignored) {}
     return null;
   }
   
@@ -168,7 +149,7 @@ public class DDXMLElement implements Element
     String sx = attributeForName(name);
     if (sx != null)
     {
-      return Integer.valueOf(sx);
+      return Integer.parseInt(sx);
     }
     return 0;
   }
@@ -238,10 +219,7 @@ public class DDXMLElement implements Element
   }
   
   @Override
-  public void setNodeValue(String nodeValue) throws DOMException
-  {
-    mElement.setNodeValue(nodeValue);
-  }
+  public void setNodeValue(String nodeValue) throws DOMException { mElement.setNodeValue(nodeValue);}
   
   @Override
   public short getNodeType()

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * CredentialProvider-Implementierung für Psono CE.
- * Kapselt PsonoUnrestrictedClient inkl. Session-Recycling und
- * transparentem Re-Login bei abgelaufenem Token (HTTP 401).
+ * CredentialProvider implementation for Psono CE.
+ * Wraps PsonoUnrestrictedClient including session recycling and
+ * transparent re-login on expired token (HTTP 401).
  */
 public class PsonoProvider implements CredentialProvider
 {
@@ -68,14 +68,14 @@ public class PsonoProvider implements CredentialProvider
     return result.getValue();
   }
 
-  /** Loggt ein falls noch keine Session aktiv. */
+  /** Logs in if no session is active yet. */
   private void ensureLoggedIn()
   {
     if (client.getToken() != null) return;
     relogin();
   }
 
-  /** Setzt die Session zurück und loggt neu ein. */
+  /** Resets the session and logs in again. */
   private void relogin()
   {
     client.logout();
@@ -85,13 +85,13 @@ public class PsonoProvider implements CredentialProvider
     Log.i("[" + getName() + "] Login erfolgreich");
   }
 
-  /** Prüft ob der Fehler auf einen abgelaufenen Token hindeutet (HTTP 401). */
+  /** Returns true if the error indicates an expired token (HTTP 401). */
   private boolean isTokenExpired(PsonoResult<?> result)
   {
     return result.getMessage() != null && result.getMessage().contains(TOKEN_EXPIRED_MARKER);
   }
 
-  /** Setzt die Session zurück — nächster Aufruf loggt neu ein. */
+  /** Resets the session — next call will re-login. */
   public void logout()
   {
     client.logout();

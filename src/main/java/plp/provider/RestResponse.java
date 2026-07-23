@@ -1,11 +1,11 @@
 package plp.provider;
 
 /**
- * Repräsentiert die Antwort die BES an BridgeHandler zurückgibt.
+ * Represents the response BES returns to BridgeHandler.
  */
 public record RestResponse(
   int    statusCode,
-  String body        // JSON als String
+  String body        // JSON as string
 )
 {
   public static RestResponse ok(String body)

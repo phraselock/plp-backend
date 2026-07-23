@@ -37,16 +37,16 @@ public class WebAuthn
     String rpid = (String) json.get("rpid");
     String device = (String) json.get("device");
 
-    // 1. Challenge erzeugen
+    // 1. Generate challenge
     byte[] challengeBytes = new byte[32];
     new SecureRandom().nextBytes(challengeBytes);
     String challengeB64 = PLTool.b64encode2String(challengeBytes);
 
-    // 2. Challenge speichern (Session oder Map)
+    // 2. Store challenge (in session)
     ctx.sessionAttribute("challenge", challengeB64);
 
     byte[] userId = PLTool.generateRandom(32);
-    // 3. Beispiel-User (später dynamisch)
+    // 3. Example user (dynamically resolved later)
     String userIdB64 = PLTool.b64encode2String(userId);
 
     Map<String, Object> response = Map.of(
@@ -88,7 +88,7 @@ public class WebAuthn
     if(schema==null) schema     = ctx.scheme();
     if(port==null) port     = String.valueOf(ctx.port());
 
-    // 1. Challenge aus Session holen
+    // 1. Retrieve challenge from session
     String challengeB64 = ctx.sessionAttribute("challenge");
     if (challengeB64 == null) {
       ctx.status(400).json((Map.of("success", false,"reason","No Challenge found")));
@@ -97,16 +97,16 @@ public class WebAuthn
     byte[] challengeBytes = Base64.getUrlDecoder().decode(challengeB64);
     Challenge challenge = new DefaultChallenge(challengeBytes);
 
-    // 2. JSON vom Browser (PublicKeyCredential)
+    // 2. JSON from browser (PublicKeyCredential)
     String json = ctx.body();
 
     // 3. WebAuthnManager
     WebAuthnManager manager = WebAuthnManager.createNonStrictWebAuthnManager();
 
-    // 4. RegistrationData aus JSON parsen
+    // 4. Parse RegistrationData from JSON
     RegistrationData registrationData = manager.parseRegistrationResponseJSON(json);
 
-    // 5. OriginPredicate definieren
+    // 5. Define origin
     Origin origin = new Origin(schema + "://" + rpidHost + ":" + port);
 
     // 6. ServerProperty
@@ -121,10 +121,10 @@ public class WebAuthn
     RegistrationParameters registrationParameters =
       new RegistrationParameters(serverProperty, null, false);
 
-    // 8. Validierung
+    // 8. Validate
     RegistrationData verified = manager.validate(registrationData, registrationParameters);
 
-    // 9. Credential extrahieren
+    // 9. Extract credential
     AttestationObject attObj = verified.getAttestationObject();
     AuthenticatorData<?> authData = attObj.getAuthenticatorData();
 
@@ -184,16 +184,16 @@ public class WebAuthn
     String rpidHost   = ctx.host().split(":")[0];
     Log.i("rpidHost: " + rpidHost);
 
-    // Challenge erzeugen
+    // Generate challenge
     String challenge = generateChallenge();
 
-    // Challenge in Session speichern
+    // Store challenge in session
     ctx.sessionAttribute("webauthn_challenge", challenge);
 
-    // JSON-Objekt als Map bauen
+    // Build response map
     Map<String, Object> resp = new HashMap<>();
     resp.put("challenge", challenge);
-    resp.put("rpId", rpidHost);   // deine Domain
+    resp.put("rpId", rpidHost);   // your domain
     resp.put("timeout", 60000);
     resp.put("userVerification", "preferred");
 
@@ -225,10 +225,10 @@ public class WebAuthn
     if(schema==null) schema     = ctx.scheme();
     if(port==null) port     = String.valueOf(ctx.port());
 
-    // 1. Rohes JSON vom Browser
+    // 1. Raw JSON from browser
     String json = ctx.body();
 
-    // 2. Challenge aus Session
+    // 2. Challenge from session
     String expectedChallenge = ctx.sessionAttribute("webauthn_challenge");
     if (expectedChallenge == null) {
       ctx.status(400).json((Map.of("success", false,"reason","No challenge")));
@@ -238,7 +238,7 @@ public class WebAuthn
     // 3. WebAuthnManager
     WebAuthnManager manager = WebAuthnManager.createNonStrictWebAuthnManager();
 
-    // 4. JSON → AuthenticationData
+    // 4. Parse JSON → AuthenticationData
     AuthenticationData authData;
     try {
       authData = manager.parseAuthenticationResponseJSON(json);
@@ -247,7 +247,7 @@ public class WebAuthn
       return;
     }
 
-    // 5. Credential anhand credentialId (rawId) finden
+    // 5. Look up credential by credentialId (rawId)
     //String credentialId = authData.getCredentialId().getBase64Url();
     String credentialId = PLTool.byteArrayToHexString(authData.getCredentialId());
     Log.i("   credentialId " + credentialId);
@@ -299,7 +299,7 @@ public class WebAuthn
         userPresenceRequired
       );
 
-    // 8. Validierung
+    // 8. Validate
     try {
       manager.verify(authData, authenticationParameters);
     } catch (Exception e) {
@@ -307,7 +307,7 @@ public class WebAuthn
       return;
     }
 
-    // 9. userHandle prüfen (discoverable credential)
+    // 9. Check userHandle (discoverable credential)
     if (authData.getUserHandle() != null) {
       //String userHandle = new String(authData.getUserHandle().getBytes());
       String userHandle =  PLTool.byteArrayToHexString(authData.getUserHandle());
@@ -317,14 +317,14 @@ public class WebAuthn
       }
     }
 
-    // 10. SignCount aktualisieren
+    // 10. Update sign count
     long updateSignCount = authData.getAuthenticatorData().getSignCount();
     if (updateSignCount > credStored.signCount())
     {
       CredentialDao.updateSignatureCounter(credentialId,updateSignCount);
     }
 
-    // 11. Session setzen
+    // 11. Set session
     ctx.sessionAttribute("userId", credStored.userId());
     ctx.json((Map.of("success", true,"reason","none")));
   }

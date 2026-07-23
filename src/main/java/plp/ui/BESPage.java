@@ -35,9 +35,9 @@ public class BESPage {
 
   public static String besStart(Context ctx)
   {
-    String mainTitle      = "BES Service Testpage 2";
-    String displayname    = "Thomas Donhauser";
-    String userid         = "t.donhauser@ipoxo.com";
+    String mainTitle      = "BES Backend Testpage 2";
+    String displayname    = "Jane Doe";
+    String userid         = "jane.doe@yourcompany.com";
 
     return document(
       html(

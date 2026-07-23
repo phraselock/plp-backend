@@ -41,22 +41,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
- * BES-Modul für KeePass KDBX4-Integration.
+ * BES module for KeePass KDBX4 integration.
  *
- * Liest Credentials aus einer .kdbx Datei (Version 4).
- * Konfiguration via keepass.properties (neben JAR oder in resources).
+ * Reads credentials from a .kdbx file (version 4).
+ * Configuration via keepass.properties (next to JAR or in resources).
  *
- * Ergebnis-Format je Eintrag:
- *   secret_id  — UUID des KeePass-Eintrags
- *   name       — Titel des Eintrags
- *   content    — Map mit username, password, url, notes
+ * Result format per entry:
+ *   secret_id  — UUID of the KeePass entry
+ *   name       — title of the entry
+ *   content    — map with username, password, url, notes
  *   meta       — source, folder_path, type
  */
 public class BESKeePass extends BESCore
 {
   private static final String PROPERTIES = "keepass.properties";
 
-  // ── Result-Keys ──────────────────────────────────────────────────────────
+  // ── Result keys ──────────────────────────────────────────────────────────
 
   public static final String KEY_SECRET_ID = "secret_id";
   public static final String KEY_NAME      = "name";
@@ -73,7 +73,7 @@ public class BESKeePass extends BESCore
     return instance;
   }
 
-  // ── In-Memory-Cache ───────────────────────────────────────────────────────
+  // ── In-memory cache ───────────────────────────────────────────────────────
 
   private Database<?, ?, ?, ?>      cachedDb;
   private KdbxCreds                 cachedCreds;
@@ -82,7 +82,7 @@ public class BESKeePass extends BESCore
   private String                    cachedPassword;
 
 
-  /** Liefert die Service-UUID aus keepass.properties. */
+  /** Returns the service UUID from keepass.properties. */
   public String getServiceUuid()
   {
     return config != null ? config.getProperty("service.uuid", "") : "";
@@ -90,11 +90,11 @@ public class BESKeePass extends BESCore
 
   private BESKeePass() {}
 
-  // ── Initialisierung ───────────────────────────────────────────────────────
+  // ── Initialization ────────────────────────────────────────────────────────
 
   /**
-   * Lädt die Datenbank in den RAM, startet den FileWatcher und subscribt das MQTT-Topic.
-   * Muss nach MqttService.connect() aufgerufen werden.
+   * Loads the database into RAM, starts the FileWatcher, and subscribes the MQTT topic.
+   * Must be called after MqttService.connect().
    */
   public void initialize(MqttService mqtt) throws Exception
   {
@@ -102,13 +102,13 @@ public class BESKeePass extends BESCore
     cachedFilePath = required(config, "keepass.file");
     cachedPassword = required(config, "keepass.password");
 
-    // Datenbank einmalig laden
+    // Load database once
     loadDatabase();
 
-    // FileWatcher starten — reagiert auf externe Änderungen
+    // Start FileWatcher — reacts to external changes
     startFileWatcher(Path.of(cachedFilePath));
 
-    // ── Topic registrieren sobald Verbindung steht ────────────────────────
+    // ── Register topic once the connection is established ─────────────────
     String serviceUuid = config.getProperty("service.uuid", "");
     if (!serviceUuid.isBlank())
     {
@@ -123,30 +123,33 @@ public class BESKeePass extends BESCore
         }
         catch (Exception e)
         {
-          Log.e("[BESKeePass] Topic-Registrierung fehlgeschlagen: " + e.getMessage());
+          Log.e("[BESKeePass] Topic-Registrierung failed: " + e.getMessage());
         }
       });
     }
   }
 
-  /** Lädt die .kdbx Datei und baut den Cache auf. */
-  private synchronized void loadDatabase() throws Exception
+  /** Loads the .kdbx file and builds the cache. */
+  private synchronized void loadDatabase()
   {
-    Log.i("[KeePass] Lade Datenbank: " + cachedFilePath);
-    try (InputStream is = new FileInputStream(cachedFilePath))
-    {
-      cachedCreds = new KdbxCreds(cachedPassword.getBytes());
-      cachedDb    = JacksonDatabase.load(cachedCreds, is);
+    try {
+      Log.i("[KeePass] Lade Datenbank: " + cachedFilePath);
+      try (InputStream is = new FileInputStream(cachedFilePath)) {
+        cachedCreds = new KdbxCreds(cachedPassword.getBytes());
+        cachedDb = JacksonDatabase.load(cachedCreds, is);
+      }
+      cachedList = new ArrayList<>();
+      collectEntries(cachedDb.getRootGroup(), cachedList);
+      Log.i("[KeePass] Cache aktualisiert: " + cachedList.size() + " Einträge");
+    } catch (Exception e) {
+      Log.e("[BESKeePass] loadDatabase failed: " + e.getMessage());
     }
-    cachedList = new ArrayList<>();
-    collectEntries(cachedDb.getRootGroup(), cachedList);
-    Log.i("[KeePass] Cache aktualisiert: " + cachedList.size() + " Einträge");
   }
 
-  /** Überwacht die .kdbx Datei und lädt den Cache bei externen Änderungen neu. */
+  /** Watches the .kdbx file and reloads the cache on external changes. */
   private void startFileWatcher(Path dbPath)
   {
-    // Symbolische Links auflösen — WatchService braucht den echten Pfad
+    // Resolve symlinks — WatchService requires the real path
     Path realPath;
     try { realPath = dbPath.toRealPath(); }
     catch (Exception e) { realPath = dbPath; }
@@ -165,7 +168,7 @@ public class BESKeePass extends BESCore
 
         while (!Thread.interrupted())
         {
-          WatchKey key = watcher.take(); // blockiert bis Ereignis
+          WatchKey key = watcher.take(); // blocks until event
           for (WatchEvent<?> event : key.pollEvents())
           {
             Path changed = (Path) event.context();
@@ -209,7 +212,7 @@ public class BESKeePass extends BESCore
 
     try {
       ObjectMapper mapper = new ObjectMapper();
-      // Liste parsen
+      // Parse list
       JsonNode secrets = mapper.readTree(jsonString);
       int cx=0;
       for (JsonNode secret : secrets)
@@ -343,11 +346,6 @@ public class BESKeePass extends BESCore
 
       String peer = jsonObj.getString("peer");
       String request = jsonObj.getString("request");
-      //String version = jsonObj.getString("version");
-      //String hash = jsonObj.getString("hash");
-      //String signature = jsonObj.getString("signature");
-      //String contentb64 = jsonObj.getString("content");
-      //Log.i("BES received: " + request + " -> " + prettyJson(jsonstr));
 
       if(request.equalsIgnoreCase(PeerCom.MQTT_FULL_SYNC_REQUEST_KDBX))
       {
@@ -373,7 +371,6 @@ public class BESKeePass extends BESCore
               byte[] iv = CTAP2EccJava.generateRandom(16);
               AESPlnk aes = new AESPlnk(FCOEM.hexStringToByteArray(sd), iv);
 
-              //Log.i("MQTT_FULL_SYNC_REQUEST_KDBX payload: " + prettyJson(response));
               Log.i("MQTT_FULL_SYNC_REQUEST_KDBX payload: " + response);
 
               PeerCom.sessionForPeer(peer).credList = buildPhraseXExportV030FromKdbx(aes, sUUID, response);
@@ -488,7 +485,7 @@ public class BESKeePass extends BESCore
     }
   }
 
-  /** Erzwingt einen Cache-Reload — z.B. nach manuellem Eingriff. */
+  /** Forces a cache reload — e.g. after manual intervention. */
   private void handleReload(String[] parts, byte[] payload)
   {
     Log.i("[KeePass] Reload angefordert");
@@ -498,24 +495,24 @@ public class BESKeePass extends BESCore
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  /** Steuert wie mehrere Tags kombiniert werden. */
+  /** Controls how multiple tags are combined. */
   public enum MatchMode
   {
-    /** Credential muss ALLE angegebenen Tags besitzen. */
+    /** Credential must have ALL specified tags. */
     AND,
-    /** Credential muss MINDESTENS EINEN der angegebenen Tags besitzen. */
+    /** Credential must have AT LEAST ONE of the specified tags. */
     OR
   }
 
   /**
-   * Liest alle Credentials aus der konfigurierten .kdbx Datei.
-   * Traversiert rekursiv alle Gruppen und sammelt alle Einträge.
+   * Reads all credentials from the configured .kdbx file.
+   * Recursively traverses all groups and collects all entries.
    *
-   * @return Liste von Credential-Maps, jede mit KEY_SECRET_ID, KEY_NAME, KEY_CONTENT, KEY_META
+   * @return list of credential maps, each with KEY_SECRET_ID, KEY_NAME, KEY_CONTENT, KEY_META
    */
   public synchronized List<Map<String, Object>> fetchAllCredentials() throws Exception
   {
-    // Noch nicht initialisiert — direkt laden (Fallback für Tests ohne initialize())
+    // Not yet initialized — load directly (fallback for tests without initialize())
     if (cachedList == null)
     {
       config         = loadConfig();
@@ -527,10 +524,10 @@ public class BESKeePass extends BESCore
   }
 
   /**
-   * Sucht ein einzelnes Credential anhand seiner UUID.
+   * Finds a single credential by its UUID.
    *
-   * @param secretId UUID des gesuchten Eintrags
-   * @return die Credential-Map oder null wenn nicht gefunden
+   * @param secretId UUID of the entry to find
+   * @return the credential map, or null if not found
    */
   public Map<String, Object> fetchCredentialById(String secretId) throws Exception
   {
@@ -541,11 +538,11 @@ public class BESKeePass extends BESCore
   }
 
   /**
-   * Filtert Credentials nach einer Liste von Tags.
+   * Filters credentials by a list of tags.
    *
-   * @param tags      Liste der gesuchten Tags (case-insensitive)
-   * @param matchMode AND = alle Tags müssen vorhanden sein, OR = mindestens ein Tag
-   * @return gefilterte Liste von Credential-Maps
+   * @param tags      list of tags to search for (case-insensitive)
+   * @param matchMode AND = all tags must be present, OR = at least one tag
+   * @return filtered list of credential maps
    */
   @SuppressWarnings("unchecked")
   public List<Map<String, Object>> fetchCredentialsByTags(List<String> tags, MatchMode matchMode) throws Exception
@@ -580,28 +577,26 @@ public class BESKeePass extends BESCore
   }
 
   /**
-   * Legt einen Eintrag mit der angegebenen UUID an (falls noch nicht vorhanden)
-   * oder aktualisiert einen bestehenden Eintrag — Felder werden einzeln
-   * beschrieben, d.h. nur im patch enthaltene Felder werden geändert, alle
-   * anderen bleiben unverändert.
+   * Creates an entry with the given UUID (if it does not yet exist) or updates an
+   * existing entry — fields are written individually, i.e. only fields present in
+   * the patch are changed, all others remain unchanged.
    *
-   * Existiert kein Eintrag mit dieser UUID, wird ein neuer Eintrag angelegt —
-   * vorausgesetzt "name" (Titel) ist im patch angegeben. Neue Einträge landen
-   * immer in der Root-Gruppe (die Gruppenstruktur am Smartphone weicht meist
-   * von der in .kdbx ab, daher wird beim Schreiben keine Gruppen-Zuordnung
-   * vorgenommen).
+   * If no entry with this UUID exists, a new entry is created — provided "name"
+   * (title) is specified in the patch. New entries always land in the root group
+   * (the group structure on the smartphone usually differs from the one in .kdbx,
+   * so no group assignment is performed when writing).
    *
-   * Ablauf: Lock-File anlegen → Backup → in Temp-Datei schreiben → atomar umbenennen → Lock löschen.
+   * Sequence: create lock file → backup → write to temp file → atomic rename → delete lock.
    *
-   * Unterstützte Felder in patch:
-   *   name                  — Titel (Pflicht bei Neuanlage)
+   * Supported fields in patch:
+   *   name                  — title (required for new entries)
    *   content.username, content.password, content.url, content.notes
-   *   content.tags          — List<String>, ersetzt die bisherigen Tags
-   *   content.custom_fields — [{key, value}, ...]  — bestehende werden aktualisiert, neue hinzugefügt
+   *   content.tags          — List<String>, additively merged with existing tags
+   *   content.custom_fields — [{key, value}, ...]  — existing ones updated, new ones added
    *
-   * @param secretId UUID des Eintrags — bei Neuanlage vom Aufrufer vorgegeben
-   * @param patch    Map mit "name" und/oder "content" (Teilmenge der fetchAllCredentials-Struktur)
-   * @return true bei Erfolg, false bei Fehler (ungültige UUID, Eintrag fehlt ohne "name", I/O-Fehler)
+   * @param secretId UUID of the entry — supplied by the caller for new entries
+   * @param patch    map with "name" and/or "content" (subset of fetchAllCredentials structure)
+   * @return true on success, false on error (invalid UUID, entry missing without "name", I/O error)
    */
   @SuppressWarnings("unchecked")
   public synchronized boolean upsertCredentialByUuid(String secretId, Map<String, Object> patch)
@@ -632,7 +627,7 @@ public class BESKeePass extends BESCore
       + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
       + ".bak");
 
-    // ── Lock anlegen ──────────────────────────────────────────────────────
+    // ── Create lock file ──────────────────────────────────────────────────
     if (Files.exists(lockPath))
     {
       Log.e("[KeePass] Lock-File existiert — Datei wird gerade verwendet: " + lockPath);
@@ -643,7 +638,7 @@ public class BESKeePass extends BESCore
 
     try
     {
-      // ── Entry im gecachten DB-Objekt suchen, sonst neu anlegen ─────────
+      // ── Find entry in cached DB object, or create new one ─────────────
       JacksonEntry target = (JacksonEntry) findEntryByUuid(db.getRootGroup(), targetUuid);
       boolean isNew = (target == null);
 
@@ -669,7 +664,7 @@ public class BESKeePass extends BESCore
         if (nameObj != null) target.setTitle(nameObj.toString());
       }
 
-      // ── Content-Felder patchen ─────────────────────────────────────────
+      // ── Patch content fields ───────────────────────────────────────────
       Map<String, Object> content = (Map<String, Object>) patch.get(KEY_CONTENT);
       if (content != null)
       {
@@ -678,8 +673,8 @@ public class BESKeePass extends BESCore
         if (content.containsKey("url"))      target.setUrl((String) content.get("url"));
         if (content.containsKey("notes"))    target.setNotes((String) content.get("notes"));
 
-        // Tags — werden ergänzt (additiv), bestehende Tags bleiben erhalten.
-        // Vergleich case-insensitiv, um Duplikate wie "Shared"/"shared" zu vermeiden.
+        // Tags — merged additively (existing tags are preserved).
+        // Comparison is case-insensitive to avoid duplicates like "Shared"/"shared".
         if (content.containsKey("tags"))
         {
           Object tagsObj = content.get("tags");
@@ -706,7 +701,7 @@ public class BESKeePass extends BESCore
           setEntryTags(target, String.join(";", mergedTags));
         }
 
-        // Custom Fields — bestehende aktualisieren, neue hinzufügen
+        // Custom fields — update existing ones, add new ones
         Object cfRaw = content.get("custom_fields");
         if (cfRaw instanceof List<?> cfList)
         {
@@ -723,23 +718,23 @@ public class BESKeePass extends BESCore
         }
       }
 
-      // ── Backup der Original-Datei (falls vorhanden) ────────────────────
+      // ── Backup the original file (if it exists) ────────────────────────
       if (Files.exists(dbPath))
       {
         Files.copy(dbPath, backupPath, StandardCopyOption.REPLACE_EXISTING);
         Log.i("[KeePass] Backup angelegt: " + backupPath.getFileName());
       }
 
-      // ── In Temp-Datei schreiben (cachedDb bereits geändert) ───────────
+      // ── Write to temp file (cachedDb already modified) ────────────────
       try (OutputStream os = new FileOutputStream(tempPath.toFile()))
       {
         db.save(cachedCreds, os);
       }
 
-      // ── Atomar umbenennen ──────────────────────────────────────────────
+      // ── Atomic rename ──────────────────────────────────────────────────
       Files.move(tempPath, dbPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 
-      // ── Cache-Liste aktualisieren (kein erneutes DB-Laden nötig) ──────
+      // ── Update cache list (no need to reload the DB object) ───────────
       cachedList = new ArrayList<>();
       collectEntries(db.getRootGroup(), cachedList);
 
@@ -749,31 +744,31 @@ public class BESKeePass extends BESCore
     catch (Exception e)
     {
       Log.e("[KeePass] upsertCredentialByUuid error: " + e.getMessage());
-      // Temp-Datei aufräumen falls vorhanden
+      // Clean up temp file if it exists
       try { Files.deleteIfExists(tempPath); } catch (Exception ignored) {}
       return false;
     }
     finally
     {
-      // ── Lock immer entfernen ───────────────────────────────────────────
+      // ── Always remove lock file ────────────────────────────────────────
       try { Files.deleteIfExists(lockPath); }
       catch (Exception e) { Log.e("[KeePass] Lock-File konnte nicht gelöscht werden: " + e.getMessage()); }
     }
   }
 
-  // ── Interne Hilfsmethoden ─────────────────────────────────────────────────
+  // ── Internal helpers ──────────────────────────────────────────────────────
 
-  /** Traversiert rekursiv alle Gruppen und sammelt Einträge. */
+  /** Recursively traverses all groups and collects entries. */
   @SuppressWarnings("unchecked")
   private void collectEntries(Group<?, ?, ?, ?> group, List<Map<String, Object>> result)
   {
-    // Einträge in dieser Gruppe
+    // Entries in this group
     for (Object entryObj : group.getEntries())
     {
       Entry<?, ?, ?, ?> entry = (Entry<?, ?, ?, ?>) entryObj;
 
-      // Tags — in KDBX als direktes Feld gespeichert, nicht als StringProperty.
-      // getProperty("Tags") liefert daher null → Zugriff via Reflection.
+      // Tags — stored in KDBX as a direct field, not as a StringProperty.
+      // getProperty("Tags") returns null — access via reflection instead.
       String rawTags = null;
       try
       {
@@ -792,7 +787,7 @@ public class BESKeePass extends BESCore
         }
       }
 
-      // Custom Fields — alle Properties die nicht Standard-KeePass-Felder sind
+      // Custom fields — all properties that are not standard KeePass fields
       Set<String> standardFields = Set.of("Title", "UserName", "Password", "URL", "Notes");
       List<Map<String, String>> customFields = new ArrayList<>();
       for (String propName : entry.getPropertyNames())
@@ -829,7 +824,7 @@ public class BESKeePass extends BESCore
       result.add(item);
     }
 
-    // Rekursiv in Untergruppen
+    // Recurse into subgroups
     for (Object subGroupObj : group.getGroups())
     {
       Group<?, ?, ?, ?> subGroup = (Group<?, ?, ?, ?>) subGroupObj;
@@ -837,7 +832,7 @@ public class BESKeePass extends BESCore
     }
   }
 
-  /** Sucht rekursiv einen Entry per UUID, gibt null zurück wenn nicht gefunden. */
+  /** Recursively searches for an entry by UUID, returns null if not found. */
   @SuppressWarnings("unchecked")
   private Entry<?, ?, ?, ?> findEntryByUuid(Group<?, ?, ?, ?> group, UUID uuid)
   {
@@ -855,12 +850,11 @@ public class BESKeePass extends BESCore
   }
 
   /**
-   * Setzt die UUID eines neu angelegten Eintrags per Reflection.
+   * Sets the UUID of a newly created entry via reflection.
    *
-   * KeePassJava2 vergibt beim Anlegen ({@code database.newEntry()}) immer eine
-   * zufällige UUID und bietet keinen öffentlichen Setter. Da der Aufrufer bei
-   * der Neuanlage aber eine vorgegebene UUID mitbringt (z.B. vom Smartphone
-   * erzeugt), wird das protected Feld "uuid" direkt überschrieben.
+   * KeePassJava2 always assigns a random UUID when creating ({@code database.newEntry()})
+   * and provides no public setter. Since the caller supplies a predetermined UUID
+   * (e.g. generated on the smartphone), the protected field "uuid" is overwritten directly.
    */
   private void setEntryUuid(JacksonEntry entry, UUID uuid) throws Exception
   {
@@ -870,10 +864,10 @@ public class BESKeePass extends BESCore
   }
 
   /**
-   * Setzt die Tags eines Eintrags per Reflection.
+   * Sets the tags of an entry via reflection.
    *
-   * Tags werden von KeePassJava2 im protected Feld "tags" als ";"-separierter
-   * String gespeichert (siehe collectEntries) — ein öffentlicher Setter existiert nicht.
+   * KeePassJava2 stores tags in the protected field "tags" as a ";"-separated
+   * string (see collectEntries) — no public setter exists.
    */
   private void setEntryTags(JacksonEntry entry, String tags) throws Exception
   {
@@ -883,8 +877,8 @@ public class BESKeePass extends BESCore
   }
 
   /**
-   * Liest die aktuellen Tags eines Eintrags per Reflection (gleiche Logik wie collectEntries).
-   * Wird für das additive Mergen neuer Tags in upsertCredentialByUuid benötigt.
+   * Reads the current tags of an entry via reflection (same logic as collectEntries).
+   * Used for additive tag merging in upsertCredentialByUuid.
    */
   private List<String> getEntryTags(JacksonEntry entry)
   {
@@ -925,7 +919,7 @@ public class BESKeePass extends BESCore
       }
     }
 
-    // 2. Externe Datei überschreibt Defaults
+    // 2. External file overrides defaults
     Path external = resolveExternalConfig();
     if (external != null && Files.exists(external))
     {

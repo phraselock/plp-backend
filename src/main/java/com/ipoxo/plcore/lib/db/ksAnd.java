@@ -12,32 +12,16 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class ksAnd
 {
-
   protected Cipher cipherEnc = null;
   protected Cipher cipherDec = null;
 
   public byte[] mAESRawData = null;
   public byte[] mIVRawData = null;
 
-  public ksAnd(byte[] aesKey)
-  {
-    initWithKey(aesKey, null);
-  }
-
   public ksAnd(byte[] aesKey, byte[] iv)
   {
     initWithKey(aesKey, iv);
   }
-
-  public ksAnd(DDXMLElement skey)
-  {
-    String key = SKeyX.getKey(skey);
-    String ivs = SKeyX.getIV(skey);
-    byte[] aesKey = FCOEM.hexStringToByteArray(key.toString());
-    byte[] iv = FCOEM.hexStringToByteArray(ivs.toString());
-    initWithKey(aesKey, iv);
-  }
-
 
   public void initWithKey(byte[] aesKey, byte[] iv)
   {
@@ -72,8 +56,6 @@ public class ksAnd
         Log.d(Configuration.DBGLEVEL, "EXCEPTION:  ksAnd::initWithKey: " + e.getMessage() + " / " + e.toString());
     }
   }
-
-
 
   public String encryptStringToB64(String plainData)
   {
@@ -210,7 +192,6 @@ public class ksAnd
     } catch (Exception ignore) {}
     return null;
   }
-
 
   public static String b64decode2String(String input)
   {

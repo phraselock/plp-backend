@@ -3,7 +3,6 @@ package plp.processor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ipoxo.lib.AESPlnk;
-import com.ipoxo.plcore.lib.db.ksAnd;
 import com.ipoxo.lib.PeerCom;
 import com.ipoxo.lib.PhraseX;
 import com.ipoxo.plcore.ctap2ecc.CTAP2EccJava;
@@ -53,7 +52,7 @@ public class BESPsono extends BESCore
     return instance;
   }
 
-  // ── Provider-Registry ────────────────────────────────────────────────────
+  // ── Provider registry ─────────────────────────────────────────────────────
 
   private final List<CredentialProvider> providers = new ArrayList<>();
 
@@ -63,7 +62,7 @@ public class BESPsono extends BESCore
     Log.i("[BES] Provider registriert: " + provider.getName());
   }
 
-  /** Liefert den ersten registrierten Provider mit dem gegebenen Namen, oder null. */
+  /** Returns the first registered provider with the given name, or null. */
   public CredentialProvider getProvider(String name)
   {
     return providers.stream()
@@ -72,69 +71,7 @@ public class BESPsono extends BESCore
       .orElse(null);
   }
 
-  /**
-   * Returns a pretty-printed JSON representation of the given value.
-   * Accepts either a JSON string or an already-parsed object (Map, List, …).
-   * Falls back to {@code String.valueOf(value)} if serialisation fails.
-   */
-  public static String prettyJson(Object value)
-  {
-    try
-    {
-      ObjectMapper mapper = new ObjectMapper();
-      Object target = (value instanceof String s) ? mapper.readValue(s, Object.class) : value;
-      return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(target);
-    }
-    catch (Exception e)
-    {
-      return String.valueOf(value);
-    }
-  }
-
-  /**
-   * Gibt einen XML-String formatiert (pretty-printed) zurück.
-   * Akzeptiert sowohl einen XML-String als auch ein org.w3c.dom.Document.
-   * Fällt auf {@code String.valueOf(value)} zurück wenn Parsing fehlschlägt.
-   */
-  public static String prettyXml(Object value)
-  {
-    try
-    {
-      javax.xml.transform.Source source;
-
-      if (value instanceof String s)
-      {
-        javax.xml.parsers.DocumentBuilder db =
-          javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        org.w3c.dom.Document doc = db.parse(new org.xml.sax.InputSource(new java.io.StringReader(s)));
-        source = new javax.xml.transform.dom.DOMSource(doc);
-      }
-      else if (value instanceof org.w3c.dom.Document doc)
-      {
-        source = new javax.xml.transform.dom.DOMSource(doc);
-      }
-      else
-      {
-        return String.valueOf(value);
-      }
-
-      javax.xml.transform.Transformer transformer =
-        javax.xml.transform.TransformerFactory.newInstance().newTransformer();
-      transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT,    "yes");
-      transformer.setOutputProperty(javax.xml.transform.OutputKeys.ENCODING,  "UTF-8");
-      transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-
-      java.io.StringWriter writer = new java.io.StringWriter();
-      transformer.transform(source, new javax.xml.transform.stream.StreamResult(writer));
-      return writer.toString();
-    }
-    catch (Exception e)
-    {
-      return String.valueOf(value);
-    }
-  }
-
-  /** Liefert die Service-UUID aus psono.properties. */
+  /** Returns the service UUID from psono.properties. */
   public String getServiceUuid()
   {
     return config != null ? config.getProperty("service.uuid", "") : "";
@@ -146,7 +83,7 @@ public class BESPsono extends BESCore
   {
     config = loadConfig();
 
-    // ── PsonoProvider aus psono.properties aufbauen ───────────────────────
+    // ── Build PsonoProvider from psono.properties ─────────────────────────
     String serverUrl  = required(config, "psono.server.url");
     String serverPubl = required(config, "psono.server.publ");
     String serverSign = required(config, "psono.server.sign");
@@ -169,7 +106,7 @@ public class BESPsono extends BESCore
 
     registerProvider(new PsonoProvider(psonoConfig));
 
-    // ── Topic registrieren sobald Verbindung steht ────────────────────────
+    // ── Register topic once the connection is established ─────────────────
     String serviceUuid = config.getProperty("service.uuid", "");
     if (!serviceUuid.isBlank())
     {
@@ -215,7 +152,7 @@ public class BESPsono extends BESCore
 
     try {
       ObjectMapper mapper = new ObjectMapper();
-      // Liste parsen
+      // Parse list
       JsonNode secrets = mapper.readTree(jsonString);
       int cx=0;
       for (JsonNode secret : secrets)
@@ -239,8 +176,8 @@ public class BESPsono extends BESCore
           String txt = "";
 
           String otp = null;
-          //String fidoToken    = null;  Kommt später wenn wir auch Schreiben nach Psono beherschen
-          //String fidoPin      = null;  Kommt später wenn wir auch Schreiben nach Psono beherschen
+          //String fidoToken    = null;  pending write-back support for Psono
+          //String fidoPin      = null;  pending write-back support for Psono
 
           if (type.equals("website_password")) {
             label = content.path("website_password_title").asText();
@@ -311,11 +248,6 @@ public class BESPsono extends BESCore
 
       String peer = jsonObj.getString("peer");
       String request = jsonObj.getString("request");
-      //String version = jsonObj.getString("version");
-      //String hash = jsonObj.getString("hash");
-      //String signature = jsonObj.getString("signature");
-      //String contentb64 = jsonObj.getString("content");
-      //Log.i("BES received: " + request + " -> " + prettyJson(jsonstr));
 
       if(request.equalsIgnoreCase(PeerCom.MQTT_FULL_SYNC_REQUEST_PSONO))
       {
@@ -337,7 +269,6 @@ public class BESPsono extends BESCore
             byte[] iv = CTAP2EccJava.generateRandom(16);
             AESPlnk aes = new AESPlnk(FCOEM.hexStringToByteArray(sd),iv);
 
-            //Log.i("MQTT_FULL_SYNC_REQUEST_PSONO payload: " + prettyJson(restResponse.body()));
             Log.i("MQTT_FULL_SYNC_REQUEST_PSONO payload: " + restResponse.body());
             PeerCom.sessionForPeer(peer).credList = buildPhraseXExportV030FromPsono(aes, sUUID, restResponse.body());
             if(PeerCom.sessionForPeer(peer).credList!=null && !PeerCom.sessionForPeer(peer).credList.isEmpty())
@@ -422,7 +353,7 @@ public class BESPsono extends BESCore
     if (providers.isEmpty()) {
       return RestResponse.error(503, "No credential providers registered");
     }
-    // Erster Provider — TODO: Provider-Auswahl via Request-Parameter oder Bearer
+    // First provider — TODO: provider selection via request parameter or bearer
     var result = providers.get(0).fetchAllCredentials();
     ObjectMapper mapper = new ObjectMapper();
     return RestResponse.ok(mapper.writeValueAsString(result));

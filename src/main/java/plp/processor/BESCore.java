@@ -33,71 +33,6 @@ import java.util.Set;
 
 public abstract class BESCore
 {
-
-  /**
-   * Returns a pretty-printed JSON representation of the given value.
-   * Accepts either a JSON string or an already-parsed object (Map, List, …).
-   * Falls back to {@code String.valueOf(value)} if serialisation fails.
-   */
-  public static String prettyJson(Object value)
-  {
-    try
-    {
-      ObjectMapper mapper = new ObjectMapper();
-      Object target = (value instanceof String s) ? mapper.readValue(s, Object.class) : value;
-      return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(target);
-    }
-    catch (Exception e)
-    {
-      return String.valueOf(value);
-    }
-  }
-
-  /**
-   * Gibt einen XML-String formatiert (pretty-printed) zurück.
-   * Akzeptiert sowohl einen XML-String als auch ein org.w3c.dom.Document.
-   * Fällt auf {@code String.valueOf(value)} zurück wenn Parsing fehlschlägt.
-   */
-  public static String prettyXml(Object value)
-  {
-    try
-    {
-      javax.xml.transform.Source source;
-
-      if (value instanceof String s)
-      {
-        javax.xml.parsers.DocumentBuilder db =
-          javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        org.w3c.dom.Document doc = db.parse(new org.xml.sax.InputSource(new java.io.StringReader(s)));
-        source = new javax.xml.transform.dom.DOMSource(doc);
-      }
-      else if (value instanceof org.w3c.dom.Document doc)
-      {
-        source = new javax.xml.transform.dom.DOMSource(doc);
-      }
-      else
-      {
-        return String.valueOf(value);
-      }
-
-      javax.xml.transform.Transformer transformer =
-        javax.xml.transform.TransformerFactory.newInstance().newTransformer();
-      transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT,    "yes");
-      transformer.setOutputProperty(javax.xml.transform.OutputKeys.ENCODING,  "UTF-8");
-      transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-
-      java.io.StringWriter writer = new java.io.StringWriter();
-      transformer.transform(source, new javax.xml.transform.stream.StreamResult(writer));
-      return writer.toString();
-    }
-    catch (Exception e)
-    {
-      return String.valueOf(value);
-    }
-  }
-
-  // ── Gecachte Config ───────────────────────────────────────────────────────
-
   protected Properties config;
 
   public Properties getConfig() { return config; }
@@ -107,17 +42,17 @@ public abstract class BESCore
     String value = cfg.getProperty(key);
     if (value == null || value.isBlank())
       throw new IllegalStateException("psono.properties: Pflichtfeld '" + key + "' fehlt");
-    return value.trim().replace("\"", ""); // Anführungszeichen entfernen falls vorhanden
+    return value.trim().replace("\"", ""); // strip surrounding quotes if present
   }
 
 
   // ── Message handling ──────────────────────────────────────────────────────
   /**
-   * Wird vom Consumer-Thread in MqttService aufgerufen.
-   * Topic-Struktur: BES-{uuid}/{type}/{...}
-   *   parts[0] = root namespace  (z.B. "BES-uuid")
-   *   parts[1] = message type    (z.B. "data", "device", "status")
-   *   parts[2..n] = weitere Segmente, handler-spezifisch
+   * Called by the consumer thread in MqttService.
+   * Topic structure: BES-{uuid}/{type}/{...}
+   *   parts[0] = root namespace  (e.g. "BES-uuid")
+   *   parts[1] = message type    (e.g. "data", "device", "status")
+   *   parts[2..n] = additional segments, handler-specific
    */
   public void onMqttMessage(String topic, byte[] payload, int qos)
   {
@@ -137,7 +72,7 @@ public abstract class BESCore
 
   protected abstract void receiveFromPeer(String[] topics, String jsonstr);
 
-  /** Sendet eine Message asynchron über MqttService (→ outQueue). */
+  /** Sends a message asynchronously via MqttService (→ outQueue). */
   public void send(String topic, byte[] payload)
   {
     MqttService.getInstance().send(topic, payload);

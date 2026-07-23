@@ -163,7 +163,7 @@ public class PeerCom
 
         PeerCom.sessionForPeer(peer).sessionKey = null;
 
-        // Signatur überprüfen
+        // Verify signature
         String peer_publ_x = peerDict.getString("publ_x");
         String peer_publ_y = peerDict.getString("publ_y");
         CTAP2EccJava verify_cecc   = new CTAP2EccJava();
@@ -287,7 +287,7 @@ public class PeerCom
         boolean bOk = verify_cecc.verify(bSign,bHash);
         if(bOk)
         {
-          // Payload entschlüsseln
+          // Decrypt payload
           byte[] nsIV = FCOEM.hexStringToByteArray(iv);
           byte[] nsAES = PeerCom.sessionForPeer(peer).sessionKey;
           AESPlnk aes = new AESPlnk(nsAES, nsIV);

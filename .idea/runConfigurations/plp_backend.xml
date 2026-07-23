@@ -2,7 +2,7 @@
   <configuration default="false" name="plp-backend" type="Application" factoryName="Application">
     <option name="ALTERNATIVE_JRE_PATH" value="temurin-25" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-    <option name="MAIN_CLASS_NAME" value="plp.service.Main" />
+    <option name="MAIN_CLASS_NAME" value="plp.backend.Main" />
     <module name="plp-backend.main" />
     <option name="VM_PARAMETERS" value="--enable-native-access=ALL-UNNAMED" />
     <method v="2">

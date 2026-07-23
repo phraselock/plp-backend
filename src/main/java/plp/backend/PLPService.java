@@ -1,4 +1,4 @@
-package plp.service;
+package plp.backend;
 
 import com.ipoxo.plcore.lib.Log;
 import io.javalin.Javalin;
@@ -16,8 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Startet den Javalin-Webserver (HTTP-API) mit IP-Allowlist und registriert
- * alle Route-Handler. Ist unabhängig von Psono, KeePass oder anderen Providern.
+ * Starts the Javalin web server (HTTP API) with IP allowlist and registers
+ * all route handlers. Independent of Psono, KeePass, or other providers.
  */
 public class PLPService
 {
@@ -43,7 +43,7 @@ public class PLPService
       throw new RuntimeException("Failed to load " + PROPERTIES, e);
     }
 
-    // 2. Externe Datei (im Arbeitsverzeichnis) überschreibt Defaults
+    // 2. External file (in working directory) overrides defaults
     Path external = Path.of(PROPERTIES);
 
     if (Files.exists(external))
@@ -70,13 +70,13 @@ public class PLPService
       .collect(Collectors.toSet());
   }
 
-  /** Steuert, ob {@code BESPsono} beim Start initialisiert wird (service.properties: bes.psono.enabled). */
+  /** Controls whether {@code BESPsono} is initialised on startup (service.properties: bes.psono.enabled). */
   public static boolean isPsonoEnabled()
   {
     return Boolean.parseBoolean(CONFIG.getProperty("bes.psono.enabled", "true"));
   }
 
-  /** Steuert, ob {@code BESKeePass} beim Start initialisiert wird (service.properties: bes.keepass.enabled). */
+  /** Controls whether {@code BESKeePass} is initialised on startup (service.properties: bes.keepass.enabled). */
   public static boolean isKeePassEnabled()
   {
     return Boolean.parseBoolean(CONFIG.getProperty("bes.keepass.enabled", "true"));

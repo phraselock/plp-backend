@@ -102,7 +102,7 @@ public class PsonoUnrestrictedClient {
     public static final String KEY_SECRET_ID = "secret_id";
     public static final String KEY_NAME      = "name";
     public static final String KEY_TYPE      = "type";
-    /** Decrypted secret fields as {@code Map<?,?>} — direkt als JSON-Objekt serialisierbar. */
+    /** Decrypted secret fields as {@code Map<?,?>} — directly serialisable as a JSON object. */
     public static final String KEY_CONTENT   = "content";
     /**
      * Origin metadata as a {@code Map<String, Object>} with the following fields:
@@ -581,7 +581,7 @@ public class PsonoUnrestrictedClient {
     }
 
     /*
-     * embedMeta() — nicht mehr benötigt, Meta wird nur noch als KEY_META Map geliefert.
+     * embedMeta() — no longer needed; meta is now returned only as the KEY_META map.
      *
     @SuppressWarnings("unchecked")
     private String embedMeta(String contentJson, Map<String, Object> meta) {
@@ -882,7 +882,7 @@ public class PsonoUnrestrictedClient {
 
     public String getToken() { return sessionToken; }
 
-    /** Setzt die Session zurück. Der nächste Aufruf von {@link #login()} startet eine neue Session. */
+    /** Resets the session. The next call to {@link #login()} starts a new session. */
     public void logout() {
         sessionToken     = null;
         sessionSecretKey = null;

@@ -4,17 +4,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Abstraktion für eine Credential-Quelle (z.B. Psono, zukünftige Konnektoren).
- * BES registriert Provider und delegiert Credential-Anfragen an sie.
+ * Abstraction for a credential source (e.g. Psono, future connectors).
+ * BES registers providers and delegates credential requests to them.
  */
 public interface CredentialProvider
 {
-  /** Name des Providers — für Logging und Routing. */
+  /** Name of the provider — used for logging and routing. */
   String getName();
 
-  /** Liefert alle verfügbaren Credentials. */
+  /** Returns all available credentials. */
   List<Map<String, Object>> fetchAllCredentials() throws Exception;
 
-  /** Liefert ein einzelnes Credential anhand seiner ID. */
+  /** Returns a single credential by its ID. */
   Map<String, Object> fetchCredentialById(String id) throws Exception;
 }

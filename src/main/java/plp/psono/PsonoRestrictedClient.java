@@ -47,7 +47,7 @@ public class PsonoRestrictedClient {
 
     public static final String KEY_SECRET_ID = "secret_id";
     public static final String KEY_NAME      = "name";
-    /** Decrypted secret fields as {@code Map<?,?>} — direkt als JSON-Objekt serialisierbar. */
+    /** Decrypted secret fields as {@code Map<?,?>} — directly serialisable as a JSON object. */
     public static final String KEY_CONTENT   = "content";
     /** Origin metadata as {@code Map<String,Object>} — source, folder_path, type. */
     public static final String KEY_META      = "meta";
@@ -304,7 +304,7 @@ public class PsonoRestrictedClient {
 
     public String getToken() { return sessionToken; }
 
-    /** Setzt die Session zurück — nächster Aufruf von {@link #login()} startet eine neue Session. */
+    /** Resets the session — the next call to {@link #login()} starts a new session. */
     public void logout()
     {
         sessionToken     = null;
