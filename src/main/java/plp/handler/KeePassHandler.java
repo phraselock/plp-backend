@@ -29,7 +29,7 @@ public class KeePassHandler
   {
     // ── Page ────────────────────────────────────────────────────────────────
 
-    config.routes.get("/keepass-user", ctx ->
+    config.routes.get("/admin/keepass-user", ctx ->
     {
       Properties mqttCfg    = MqttService.loadConfig();
       Properties keepassCfg = loadKeepassConfig();
@@ -49,7 +49,7 @@ public class KeePassHandler
 
     // ── Save (upsert) ────────────────────────────────────────────────────────
 
-    config.routes.post("/keepass-user/save", ctx ->
+    config.routes.post("/admin/keepass-user/save", ctx ->
     {
       String name     = ctx.formParam("name");
       String email    = ctx.formParam("email");
@@ -62,17 +62,17 @@ public class KeePassHandler
         int id = KeePassUserStore.getInstance().upsert(
           name.trim(), email.trim(), qrLabel != null ? qrLabel.trim() : "", tags);
         Log.i("[KeePassHandler] User saved: " + email);
-        ctx.redirect("/keepass-user?select=" + id);
+        ctx.redirect("/admin/keepass-user?select=" + id);
       }
       else
       {
-        ctx.redirect("/keepass-user");
+        ctx.redirect("/admin/keepass-user");
       }
     });
 
     // ── Delete ───────────────────────────────────────────────────────────────
 
-    config.routes.post("/keepass-user/delete", ctx ->
+    config.routes.post("/admin/keepass-user/delete", ctx ->
     {
       String idParam = ctx.formParam("id");
       if (idParam != null)
@@ -84,12 +84,12 @@ public class KeePassHandler
         }
         catch (NumberFormatException ignored) {}
       }
-      ctx.redirect("/keepass-user");
+      ctx.redirect("/admin/keepass-user");
     });
 
     // ── QR code ──────────────────────────────────────────────────────────────
 
-    config.routes.get("/keepass-user/qr.png", ctx ->
+    config.routes.get("/admin/keepass-user/qr.png", ctx ->
     {
       try
       {

@@ -14,17 +14,17 @@ public class Nav
       div()
         .withStyle("display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px;align-items:center;")
         .with(
-          tile("/config",       "Config",        currentPath),
-          tile("/appconfig",    "Application",   currentPath),
-          tile("/mqttconfig",   "MQTT",          currentPath),
-          tile("/keepass",      "KeePass",       currentPath),
-          tile("/keepass-user", "KeePass Users", currentPath),
+          tile("/admin/config",       "Config",        currentPath),
+          tile("/admin/appconfig",    "Application",   currentPath),
+          tile("/admin/mqttconfig",   "MQTT",          currentPath),
+          tile("/admin/keepass",      "KeePass",       currentPath),
+          tile("/admin/keepass-user", "KeePass Users", currentPath),
           span("UUID")
             .withStyle(
               "padding:4px 14px;border-radius:20px;font-size:12px;cursor:pointer;" +
               "border:1px dashed #aaa;background:#fff;color:#666;margin-left:6px;")
             .attr("onclick", "openUuidModal()"),
-          img().withSrc("/img/logo.png")
+          img().withSrc("/admin/img/logo.png")
             .withAlt("iPoxo IT GmbH")
             .withStyle(
               "max-height:48px;max-width:160px;object-fit:contain;" +
@@ -95,6 +95,26 @@ public class Nav
         "});" +
         "document.getElementById('uuid-modal').addEventListener('click',function(e){" +
         "  if(e.target===this)closeUuidModal();" +
+        "});" +
+        "document.addEventListener('DOMContentLoaded',function(){" +
+        "  var t=(new URLSearchParams(window.location.search)).get('token');" +
+        "  if(!t)return;" +
+        "  document.querySelectorAll('a[href]').forEach(function(a){" +
+        "    var h=a.getAttribute('href');" +
+        "    if(h&&h.startsWith('/admin/')){" +
+        "      var u=new URL(a.href,location.origin);" +
+        "      u.searchParams.set('token',t);" +
+        "      a.href=u.toString();" +
+        "    }" +
+        "  });" +
+        "  document.querySelectorAll('form').forEach(function(f){" +
+        "    var action=f.getAttribute('action')||'';" +
+        "    if(action.startsWith('/admin/')){" +
+        "      var u=new URL(f.action,location.origin);" +
+        "      u.searchParams.set('token',t);" +
+        "      f.action=u.toString();" +
+        "    }" +
+        "  });" +
         "});"
       ))
     );

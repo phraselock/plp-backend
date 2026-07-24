@@ -25,11 +25,11 @@ public class PLPApplication
 {
   private static final String PROPERTIES = "application.properties";
 
-  private static final Properties  CONFIG      = loadConfig();
-  private static final Set<String> ALLOWED_IPS = parseAllowedIps(CONFIG);
-  private static final int         PORT        = Integer.parseInt(CONFIG.getProperty("server.port", "8080"));
-  private static final int         MAX_THREADS = Integer.parseInt(CONFIG.getProperty("jetty.maxThreads", "10"));
-  private static final int         MIN_THREADS = Integer.parseInt(CONFIG.getProperty("jetty.minThreads", "2"));
+  private static final Properties  CONFIG       = loadConfig();
+  private static final Set<String> ALLOWED_IPS  = parseAllowedIps(CONFIG);
+  private static final int         PORT         = Integer.parseInt(CONFIG.getProperty("server.port", "8080"));
+  private static final int         MAX_THREADS  = Integer.parseInt(CONFIG.getProperty("jetty.maxThreads", "10"));
+  private static final int         MIN_THREADS  = Integer.parseInt(CONFIG.getProperty("jetty.minThreads", "2"));
 
   private static Properties loadConfig()
   {
@@ -86,6 +86,23 @@ public class PLPApplication
     return Boolean.parseBoolean(CONFIG.getProperty("bes.keepass.enabled", "true"));
   }
 
+  private static String adminToken()
+  {
+    Properties p = new Properties();
+    try (InputStream in = PLPApplication.class.getResourceAsStream("/" + PROPERTIES))
+    {
+      if (in != null) p.load(in);
+    }
+    catch (Exception ignored) {}
+    Path external = ConfigPathResolver.resolve(PROPERTIES, PLPApplication.class);
+    try (InputStream in = Files.newInputStream(external))
+    {
+      p.load(in);
+    }
+    catch (Exception ignored) {}
+    return p.getProperty("admin.token", "").trim();
+  }
+
   private static Javalin web;
 
   public static void stop()
@@ -114,7 +131,7 @@ public class PLPApplication
       });
       config.staticFiles.add(sf ->
       {
-        sf.hostedPath = "/img";
+        sf.hostedPath = "/admin/img";
         sf.directory  = "/public/img";
       });
 
@@ -123,6 +140,16 @@ public class PLPApplication
         if (!ALLOWED_IPS.contains(ctx.ip()))
         {
           ctx.status(403).result("Forbidden");
+          ctx.skipRemainingHandlers();
+          return;
+        }
+
+        if (ctx.path().startsWith("/admin/"))
+        {
+          String adminToken = adminToken();
+          if (adminToken.isEmpty() || adminToken.equals(ctx.queryParam("token"))) return;
+
+          ctx.status(403).result("Admin token required");
           ctx.skipRemainingHandlers();
         }
       });

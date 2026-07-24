@@ -29,16 +29,16 @@ public class ConfigPage
             h1("Configuration")
               .withStyle("text-align:center;margin-bottom:40px;"),
             div().withStyle("display:flex;gap:20px;flex-wrap:wrap;justify-content:center;").with(
-              tile("/appconfig", "Application",
+              tile("/admin/appconfig", "Application",
                 "application.properties",
                 "Port, IP allowlist, thread pool, peer config store"),
-              tile("/mqttconfig", "MQTT",
+              tile("/admin/mqttconfig", "MQTT",
                 "mqtt.properties",
                 "Broker URL, TLS certificates, ECC signature keys"),
-              tile("/keepass", "KeePass",
+              tile("/admin/keepass", "KeePass",
                 "keepass.properties",
                 "Service UUID, database path, master password"),
-              tile("/keepass-user", "KeePass Users",
+              tile("/admin/keepass-user", "KeePass Users",
                 "QR code generator",
                 "Signature key status, name, tags, generate QR code")
             )

@@ -50,7 +50,7 @@ public class KeePassPage
         .with(
           div().withStyle(CARD).with(
 
-            Nav.bar("/keepass-user"),
+            Nav.bar("/admin/keepass-user"),
 
             h1("KeePass Users").withStyle("text-align:center;margin-bottom:8px;"),
 
@@ -65,14 +65,32 @@ public class KeePassPage
                   span(uuidOk ? "OK" : "not configured").withStyle(uuidOk ? OK : ERR))
               ),
 
+            // ── Search + New User bar ────────────────────────────────────
+            div().withStyle("display:flex;gap:10px;align-items:center;margin-bottom:12px;").with(
+              input().withType("text").withId("user-search")
+                .withPlaceholder("Search name, email or tags…")
+                .withStyle(
+                  "flex:1;padding:7px 12px;font-size:13px;" +
+                  "border:1px solid #ddd;border-radius:6px;background:#fafafa;")
+                .attr("oninput", "filterUsers()"),
+              a("+ New User").withHref("/admin/keepass-user")
+                .withStyle("font-size:13px;text-decoration:none;color:#333;white-space:nowrap;" +
+                           "padding:6px 14px;border:1px solid #bbb;border-radius:6px;")
+            ),
+
             // ── User table ───────────────────────────────────────────────
             users.isEmpty()
               ? p("No users yet.").withStyle("color:#888;font-size:13px;")
-              : table()
-                  .withStyle("width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;")
+              : div().withStyle(
+                    "max-height:220px;overflow-y:auto;border:1px solid #eee;" +
+                    "border-radius:8px;margin-bottom:16px;")
+                  .with(table()
+                  .withStyle("width:100%;border-collapse:collapse;font-size:13px;")
                   .with(
                     thead(tr()
-                      .withStyle("background:#f0f0f0;text-align:left;")
+                      .withStyle(
+                        "background:#f0f0f0;text-align:left;" +
+                        "position:sticky;top:0;z-index:1;")
                       .with(
                         th("Name").withStyle("padding:8px 10px;"),
                         th("Email").withStyle("padding:8px 10px;"),
@@ -81,13 +99,14 @@ public class KeePassPage
                         th("").withStyle("padding:8px 10px;")
                       )
                     ),
-                    tbody().with(
+                    tbody().withId("user-tbody").with(
                       each(users, u -> tr()
                         .withStyle(
                           "border-top:1px solid #eee;" +
                           (selected != null && selected.id() == u.id()
                             ? "background:#f5f9ff;" : ""))
                         .attr("data-name",     u.name())
+                        .attr("data-email",    u.email())
                         .attr("data-qrlabel",  u.qrLabel())
                         .attr("data-tags",     u.tags())
                         .with(
@@ -96,12 +115,12 @@ public class KeePassPage
                           td(u.tags().replace(",", ", ")).withStyle("padding:8px 10px;color:#555;"),
                           td(u.updatedAt()).withStyle("padding:8px 10px;color:#aaa;font-size:12px;"),
                           td().withStyle("padding:8px 10px;white-space:nowrap;").with(
-                            a("Select").withHref("/keepass-user?select=" + u.id())
+                            a("Select").withHref("/admin/keepass-user?select=" + u.id())
                               .withStyle("margin-right:10px;font-size:12px;text-decoration:none;color:#333;"),
                             a("Clone").withHref("#")
                               .attr("onclick", "return cloneRow(this.closest('tr'))")
                               .withStyle("margin-right:10px;font-size:12px;text-decoration:none;color:#555;"),
-                            form().withMethod("post").withAction("/keepass-user/delete")
+                            form().withMethod("post").withAction("/admin/keepass-user/delete")
                               .withStyle("display:inline;")
                               .with(
                                 input().withType("hidden").withName("id").withValue(String.valueOf(u.id())),
@@ -114,13 +133,7 @@ public class KeePassPage
                         )
                       )
                     )
-                  ),
-
-            div().withStyle("display:flex;justify-content:flex-end;margin-bottom:20px;").with(
-              a("+ New User").withHref("/keepass-user")
-                .withStyle("font-size:13px;text-decoration:none;color:#333;" +
-                           "padding:6px 14px;border:1px solid #bbb;border-radius:6px;")
-            ),
+                  )),
 
             hr().withStyle("margin:0 0 28px 0;"),
 
@@ -128,7 +141,7 @@ public class KeePassPage
             h3(selected != null ? "Edit User" : "New User")
               .withStyle("margin-top:0;margin-bottom:20px;"),
 
-            form().withMethod("post").withAction("/keepass-user/save").with(
+            form().withMethod("post").withAction("/admin/keepass-user/save").with(
 
               input().withType("hidden").withName("id").withValue(fId),
 
@@ -145,14 +158,14 @@ public class KeePassPage
                 .withPlaceholder("e.g. max@company.com")
                 .withStyle(FIELD + "width:calc(100% - 22px);display:block;font-size:14px;"),
 
-              label("QR Label (name field in QR code)"),
+              label("Label (name field on your smartphone)"),
               input().withType("text").withName("qr_label").withId("f-qrlabel")
                 .withValue(fQrLabel)
                 .withPlaceholder("e.g. KeePass-HMX")
                 .withStyle(FIELD + "width:calc(100% - 22px);display:block;font-size:14px;")
                 .attr("oninput", "updatePreview()"),
 
-              label("Tags (one per line)"),
+              label("Keepass Filter Tags (one per line)"),
               textarea().withName("tags").withId("f-tags")
                 .attr("rows", "4")
                 .withStyle(FIELD + "width:calc(100% - 22px);display:block;font-size:14px;resize:vertical;")
@@ -224,7 +237,7 @@ public class KeePassPage
       "  var tagsRaw=document.getElementById('f-tags').value;\n" +
       "  var tags=tagsRaw.split('\\n').map(function(t){return t.trim();}).filter(function(t){return t.length>0;});\n" +
       "  var img=document.getElementById('qrImage');\n" +
-      "  img.src='/keepass-user/qr.png?name='+label+'&tags='+encodeURIComponent(tags.join(','));\n" +
+      "  img.src='/admin/keepass-user/qr.png?name='+label+'&tags='+encodeURIComponent(tags.join(','));\n" +
       "  img.style.display='block';\n" +
       "}\n" +
       "function cloneRow(tr){\n" +
@@ -237,6 +250,14 @@ public class KeePassPage
       "  document.getElementById('f-email').focus();\n" +
       "  return false;\n" +
       "}\n" +
-      "updatePreview();\n";
+      "updatePreview();\n" +
+      "function filterUsers(){\n" +
+      "  var q=document.getElementById('user-search').value.toLowerCase();\n" +
+      "  var rows=document.querySelectorAll('#user-tbody tr');\n" +
+      "  rows.forEach(function(tr){\n" +
+      "    var text=(tr.dataset.name+' '+tr.dataset.email+' '+tr.dataset.tags).toLowerCase();\n" +
+      "    tr.style.display=text.includes(q)?'':'none';\n" +
+      "  });\n" +
+      "}\n";
   }
 }
