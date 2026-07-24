@@ -144,7 +144,7 @@ public class PLPApplication
           return;
         }
 
-        if (ctx.path().startsWith("/admin/"))
+        if (ctx.path().startsWith("/admin/") && !ctx.path().startsWith("/admin/img/"))
         {
           String adminToken = adminToken();
           if (adminToken.isEmpty() || adminToken.equals(ctx.queryParam("token"))) return;
