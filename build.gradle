@@ -45,6 +45,10 @@ dependencies {
     // KeePass KDBX4
     implementation 'org.linguafranca.pwdb:KeePassJava2:2.2.4'
     implementation 'org.linguafranca.pwdb:KeePassJava2-kdbx:2.2.4'
+
+    // QR code generation
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
 }
 
 shadowJar {

@@ -3,6 +3,8 @@ package plp.backend;
 import com.ipoxo.plcore.lib.Log;
 import io.javalin.Javalin;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import plp.handler.ConfigHandler;
+import plp.handler.KeePassHandler;
 import plp.handler.WebAuthnHandler;
 import plp.lib.ConfigPathResolver;
 
@@ -99,17 +101,21 @@ public class PLPApplication
     web = Javalin.create(config ->
     {
       config.jetty.threadPool = threadPool;
-      config.router.contextPath = "/phraselock-idp";
 
       config.staticFiles.add(sf ->
       {
-        sf.hostedPath = "/js";
+        sf.hostedPath = "/phraselock-idp/js";
         sf.directory  = "/public/js";
       });
       config.staticFiles.add(sf ->
       {
-        sf.hostedPath = "/css";
+        sf.hostedPath = "/phraselock-idp/css";
         sf.directory  = "/public/css";
+      });
+      config.staticFiles.add(sf ->
+      {
+        sf.hostedPath = "/img";
+        sf.directory  = "/public/img";
       });
 
       config.routes.before(ctx ->
@@ -123,6 +129,8 @@ public class PLPApplication
 
       // Register route handlers
       new WebAuthnHandler().registerRoutes(config);
+      new KeePassHandler().registerRoutes(config);
+      new ConfigHandler().registerRoutes(config);
     });
 
     web.start(PORT);
