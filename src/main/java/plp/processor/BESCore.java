@@ -1,34 +1,8 @@
 package plp.processor;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ipoxo.lib.AESPlnk;
-import com.ipoxo.lib.PeerCom;
-import com.ipoxo.lib.PhraseX;
-import com.ipoxo.plcore.ctap2ecc.CTAP2EccJava;
-import com.ipoxo.plcore.lib.Configuration;
-import com.ipoxo.plcore.lib.DDXMLElement;
-import com.ipoxo.plcore.lib.FCOEM;
-import com.ipoxo.plcore.lib.Log;
-import org.jetbrains.annotations.NotNull;
-import org.json.JSONObject;
 import plp.handler.MqttService;
-import plp.lib.Redis;
-import plp.provider.CredentialProvider;
-import plp.provider.PsonoProvider;
-import plp.provider.RestResponse;
-import plp.psono.PsonoConfig;
-import plp.psono.PsonoServerConfig;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 
 public abstract class BESCore

@@ -149,9 +149,9 @@ function _WebAuthnLib(param)
         const verifyResult = await resVerify.json();
 
         if (verifyResult.success) {
-            document.getElementById("output").innerText = "Login erfolgreich";
+            document.getElementById("output").innerText = "Login Successful";
         } else {
-            document.getElementById("output").innerText = "Login fehlgeschlagen";
+            document.getElementById("output").innerText = "Login Failed";
         }
 
     }

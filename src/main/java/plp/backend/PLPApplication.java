@@ -3,8 +3,8 @@ package plp.backend;
 import com.ipoxo.plcore.lib.Log;
 import io.javalin.Javalin;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import plp.handler.UIHandler;
 import plp.handler.WebAuthnHandler;
+import plp.lib.ConfigPathResolver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
  * Starts the Javalin web server (HTTP API) with IP allowlist and registers
  * all route handlers. Independent of Psono, KeePass, or other providers.
  */
-public class PLPService
+public class PLPApplication
 {
-  private static final String PROPERTIES = "service.properties";
+  private static final String PROPERTIES = "application.properties";
 
   private static final Properties  CONFIG      = loadConfig();
   private static final Set<String> ALLOWED_IPS = parseAllowedIps(CONFIG);
@@ -34,7 +34,7 @@ public class PLPService
     Properties props = new Properties();
 
     // 1. Bundled defaults from JAR
-    try (InputStream in = PLPService.class.getResourceAsStream("/" + PROPERTIES))
+    try (InputStream in = PLPApplication.class.getResourceAsStream("/" + PROPERTIES))
     {
       if (in != null) props.load(in);
     }
@@ -43,8 +43,10 @@ public class PLPService
       throw new RuntimeException("Failed to load " + PROPERTIES, e);
     }
 
-    // 2. External file (in working directory) overrides defaults
-    Path external = Path.of(PROPERTIES);
+    // 2. External file overrides defaults — searched in this order:
+    //      a) next to the JAR        (Linux /opt/plp/ layout)
+    //      c) working directory      (fallback / dev)
+    Path external = ConfigPathResolver.resolve(PROPERTIES, PLPApplication.class);
 
     if (Files.exists(external))
     {
@@ -70,16 +72,23 @@ public class PLPService
       .collect(Collectors.toSet());
   }
 
-  /** Controls whether {@code BESPsono} is initialised on startup (service.properties: bes.psono.enabled). */
+  /** Controls whether {@code BESPsono} is initialised on startup (application.properties: bes.psono.enabled). */
   public static boolean isPsonoEnabled()
   {
     return Boolean.parseBoolean(CONFIG.getProperty("bes.psono.enabled", "true"));
   }
 
-  /** Controls whether {@code BESKeePass} is initialised on startup (service.properties: bes.keepass.enabled). */
+  /** Controls whether {@code BESKeePass} is initialised on startup (application.properties: bes.keepass.enabled). */
   public static boolean isKeePassEnabled()
   {
     return Boolean.parseBoolean(CONFIG.getProperty("bes.keepass.enabled", "true"));
+  }
+
+  private static Javalin web;
+
+  public static void stop()
+  {
+    if (web != null) web.stop();
   }
 
   public static void start()
@@ -87,7 +96,7 @@ public class PLPService
     var threadPool = new QueuedThreadPool(MAX_THREADS, MIN_THREADS, 60_000);
     threadPool.setName("jetty");
 
-    var web = Javalin.create(config ->
+    web = Javalin.create(config ->
     {
       config.jetty.threadPool = threadPool;
       config.router.contextPath = "/phraselock-idp";
@@ -113,7 +122,6 @@ public class PLPService
       });
 
       // Register route handlers
-      new UIHandler().registerRoutes(config);
       new WebAuthnHandler().registerRoutes(config);
     });
 

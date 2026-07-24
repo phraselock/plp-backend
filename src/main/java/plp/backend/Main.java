@@ -20,13 +20,21 @@ public class Main {
     // Connect MQTT once — independent of providers
     MqttService mqtt = MqttService.getInstance();
 
-    if (PLPService.isKeePassEnabled())
+    Runtime.getRuntime().addShutdownHook(new Thread(() ->
+    {
+      Log.i("[Shutdown] Stopping...");
+      PLPApplication.stop();
+      mqtt.disconnect();
+      Log.i("[Shutdown] Done.");
+    }, "shutdown"));
+
+    if (PLPApplication.isKeePassEnabled())
     {
       Log.i("[Start] Launching KeePass Support");
       BESKeePass.getInstance().initialize(mqtt);
     }
 
-    if (PLPService.isPsonoEnabled())
+    if (PLPApplication.isPsonoEnabled())
     {
       Log.i("[Start] Launching Psono Support");
       BESPsono.getInstance().initialize(mqtt);
@@ -34,6 +42,6 @@ public class Main {
 
     mqtt.connect();
 
-    PLPService.start();
+    PLPApplication.start();
   }
 }

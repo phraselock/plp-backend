@@ -19,8 +19,8 @@ import org.linguafranca.pwdb.kdbx.KdbxCreds;
 import org.linguafranca.pwdb.kdbx.jackson.JacksonDatabase;
 import org.linguafranca.pwdb.kdbx.jackson.JacksonEntry;
 import plp.handler.MqttService;
-import plp.lib.Redis;
-import plp.provider.RestResponse;
+import plp.lib.ConfigPathResolver;
+import plp.lib.PeerConfigStoreFactory;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -349,7 +349,7 @@ public class BESKeePass extends BESCore
 
       if(request.equalsIgnoreCase(PeerCom.MQTT_FULL_SYNC_REQUEST_KDBX))
       {
-        Set<String> peerConfig = Redis.readPeerConfig(peer);
+        Set<String> peerConfig = PeerConfigStoreFactory.getInstance().readPeerConfig(peer);
         if(peerConfig!=null && peerConfig.size()>0)
         {
           JSONObject peerDict = new JSONObject(peerConfig.stream().findFirst().orElse(null));
@@ -425,13 +425,13 @@ public class BESKeePass extends BESCore
           String y = jsonPeerData.getString("publ_y");
           if(x!=null && y!=null)
           {
-            Redis.writePeerConfig(peer,content);
+            PeerConfigStoreFactory.getInstance().writePeerConfig(peer, content);
           }
         } catch (Exception ignored) {}
       }
       else if(request.equalsIgnoreCase(PeerCom.MQTT_SKEY_NEGO_REQUEST_KDBX))
       {
-        Set<String> peerConfig = Redis.readPeerConfig(peer);
+        Set<String> peerConfig = PeerConfigStoreFactory.getInstance().readPeerConfig(peer);
         if(peerConfig!=null && !peerConfig.isEmpty())
         {
           JSONObject peerDict = new JSONObject(peerConfig.stream().findFirst().orElse(null));
@@ -920,8 +920,8 @@ public class BESKeePass extends BESCore
     }
 
     // 2. External file overrides defaults
-    Path external = resolveExternalConfig();
-    if (external != null && Files.exists(external))
+    Path external = ConfigPathResolver.resolve(PROPERTIES, BESKeePass.class);
+    if (Files.exists(external))
     {
       try (InputStream in = Files.newInputStream(external))
       {
@@ -934,31 +934,5 @@ public class BESKeePass extends BESCore
       Log.i("[KeePass] Config: Keine externe " + PROPERTIES + " gefunden, verwende Bundled Defaults");
     }
     return props;
-  }
-
-  // Resolves the external {PROPERTIES} in this order:
-  //   1. Next to the JAR:    /opt/plp/{PROPERTIES}
-  //   2. Working directory:  ./{PROPERTIES}
-  private static Path resolveExternalConfig()
-  {
-    // 1. Directory of the JAR file
-    try
-    {
-      Path jarLocation = Path.of(
-        BESKeePass.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-      Path jarDir = Files.isDirectory(jarLocation) ? jarLocation : jarLocation.getParent();
-      Path p = jarDir.resolve(PROPERTIES);
-      Log.i("[KeePass] Config: Suche neben JAR: " + p.toAbsolutePath());
-      if (Files.exists(p)) return p;
-    }
-    catch (Exception e)
-    {
-      Log.e("[KeePass] Config: JAR-Pfad konnte nicht ermittelt werden: " + e.getMessage());
-    }
-
-    // 2. Working directory as fallback
-    Path p = Path.of(PROPERTIES);
-    Log.i("[KeePass] Config: Suche im Arbeitsverzeichnis: " + p.toAbsolutePath());
-    return p;
   }
 }

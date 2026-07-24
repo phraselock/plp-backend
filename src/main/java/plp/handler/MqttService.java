@@ -6,6 +6,7 @@ import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
+import plp.lib.ConfigPathResolver;
 import plp.lib.SslHelper;
 
 import java.nio.charset.StandardCharsets;
@@ -165,8 +166,10 @@ public class MqttService implements MqttCallback
       if (in != null) props.load(in);
     }
 
-    // 2. External file (next to the JAR) overrides defaults
-    java.nio.file.Path external = java.nio.file.Path.of(PROPERTIES);
+    // 2. External file overrides defaults — searched in this order:
+    //      a) next to the JAR        (Linux /opt/plp/ layout)
+    //      c) working directory      (fallback / dev)
+    java.nio.file.Path external = ConfigPathResolver.resolve(PROPERTIES, MqttService.class);
 
     if (java.nio.file.Files.exists(external))
     {
@@ -174,7 +177,7 @@ public class MqttService implements MqttCallback
       {
         props.load(in);
       }
-      Log.i("[MQTT] Config geladen: " + external.toAbsolutePath());
+      Log.i("[MQTT] Config loaded: " + external.toAbsolutePath());
     }
     return props;
   }
@@ -287,6 +290,13 @@ public class MqttService implements MqttCallback
   public boolean isConnected()
   {
     return client != null && client.isConnected();
+  }
+
+  public void disconnect()
+  {
+    if (client == null) return;
+    try { client.disconnect(); } catch (MqttException ignored) {}
+    try { client.close();      } catch (MqttException ignored) {}
   }
 
   public String getBrokerUrl()

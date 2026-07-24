@@ -18,7 +18,6 @@ import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import com.webauthn4j.server.ServerProperty;
 
 import io.javalin.http.Context;
-import org.eclipse.jetty.util.IO;
 import plp.lib.PLTool;
 import plp.lib.CredentialDao;
 
@@ -168,7 +167,7 @@ public class WebAuthn
     CredentialDao.setPublicKey(userid,PLTool.byteArrayToHexString(publicKey));
     CredentialDao.setSignCounter(userid,authData.getSignCount());
 
-    ctx.result("Registrierung erfolgreich!");
+    ctx.result("Registration successful!");
   }
 
   public static String generateChallenge()

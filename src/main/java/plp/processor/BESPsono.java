@@ -10,10 +10,10 @@ import com.ipoxo.plcore.lib.Configuration;
 import com.ipoxo.plcore.lib.DDXMLElement;
 import com.ipoxo.plcore.lib.FCOEM;
 import com.ipoxo.plcore.lib.Log;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import plp.handler.MqttService;
-import plp.lib.Redis;
+import plp.lib.ConfigPathResolver;
+import plp.lib.PeerConfigStoreFactory;
 import plp.provider.CredentialProvider;
 import plp.provider.PsonoProvider;
 import plp.provider.RestResponse;
@@ -22,7 +22,6 @@ import plp.psono.PsonoServerConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -251,7 +250,7 @@ public class BESPsono extends BESCore
 
       if(request.equalsIgnoreCase(PeerCom.MQTT_FULL_SYNC_REQUEST_PSONO))
       {
-        Set<String> peerConfig = Redis.readPeerConfig(peer);
+        Set<String> peerConfig = PeerConfigStoreFactory.getInstance().readPeerConfig(peer);
         if(peerConfig!=null && peerConfig.size()>0) {
           JSONObject peerDict = new JSONObject(peerConfig.stream().findFirst().orElse(null));
 
@@ -321,13 +320,13 @@ public class BESPsono extends BESCore
           String y = jsonPeerData.getString("publ_y");
           if(x!=null && y!=null)
           {
-            Redis.writePeerConfig(peer,content);
+            PeerConfigStoreFactory.getInstance().writePeerConfig(peer, content);
           }
         } catch (Exception ignored) {}
       }
       else if(request.equalsIgnoreCase(PeerCom.MQTT_SKEY_NEGO_REQUEST_PSONO))
       {
-        Set<String> peerConfig = Redis.readPeerConfig(peer);
+        Set<String> peerConfig = PeerConfigStoreFactory.getInstance().readPeerConfig(peer);
         if(peerConfig!=null && !peerConfig.isEmpty())
         {
           JSONObject peerDict = new JSONObject(peerConfig.stream().findFirst().orElse(null));
@@ -373,7 +372,6 @@ public class BESPsono extends BESCore
   }
 
   // ── Config ────────────────────────────────────────────────────────────────
-  @NotNull
   static public Properties loadConfig() throws IOException
   {
     Properties props = new Properties();
@@ -388,47 +386,15 @@ public class BESPsono extends BESCore
       }
     }
 
-    // 2. Resolve and load external file (overrides bundled defaults)
-    Path external = resolveExternalConfig();
-    if (external != null && Files.exists(external))
+    // 2. External file overrides defaults
+    Path external = ConfigPathResolver.resolve(PROPERTIES, BESPsono.class);
+    if (Files.exists(external))
     {
       try (InputStream in = Files.newInputStream(external))
       {
         props.load(in);
       }
-      //Log.i("[MQTT] Config: External file loaded: " + external.toAbsolutePath());
-    }
-    else
-    {
-      //Log.i("[MQTT] Config: No external " + PROPERTIES + " found, using bundled defaults only");
     }
     return props;
-  }
-
-  // Resolves the external {PROPERTIES} in this order:
-  //   1. Next to the JAR:    /opt/plp/{PROPERTIES}
-  //   2. Working directory:  ./{PROPERTIES}
-  @NotNull
-  private static Path resolveExternalConfig()
-  {
-    // 1. Directory of the JAR file
-    try
-    {
-      Path jarLocation = Path.of(
-        MqttService.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-      Path jarDir = Files.isDirectory(jarLocation) ? jarLocation : jarLocation.getParent();
-      Path p = jarDir.resolve(PROPERTIES);
-      //Log.i("[MQTT] Config: Looking next to JAR: " + p.toAbsolutePath());
-      if (Files.exists(p)) return p;
-    }
-    catch (Exception e)
-    {
-      Log.e("[MQTT] Config: Could not determine JAR path: " + e.getMessage());
-    }
-
-    // 2. Working directory as fallback
-    Path p = Path.of(PROPERTIES);
-    //Log.i("[MQTT] Config: Looking in working directory: " + p.toAbsolutePath());
-    return p;
   }
 }

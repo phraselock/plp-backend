@@ -39,6 +39,12 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Windows build ###
+windows-build/input/*.jar
+windows-build/input/*.properties
+windows-build/input/*.kdbx
+windows-build/input/certs/
+
 ### Mac OS ###
 .DS_Store
 plp-server-*.jar
@@ -48,5 +54,8 @@ deploy
 keepass.properties
 mqtt.properties
 psono.properties
-service.properties
+application.properties
 certs
+peer-config.db
+phraselockWebAuthn.db
+plp-backend-1.3.1.jar
