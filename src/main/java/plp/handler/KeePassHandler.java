@@ -6,6 +6,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.ipoxo.plcore.lib.Log;
 import io.javalin.config.JavalinConfig;
+import io.javalin.http.Context;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import plp.lib.ConfigPathResolver;
@@ -62,11 +63,11 @@ public class KeePassHandler
         int id = KeePassUserStore.getInstance().upsert(
           name.trim(), email.trim(), qrLabel != null ? qrLabel.trim() : "", tags);
         Log.i("[KeePassHandler] User saved: " + email);
-        ctx.redirect("/admin/keepass-user?select=" + id);
+        ctx.redirect(adminUrl(ctx, "?select=" + id));
       }
       else
       {
-        ctx.redirect("/admin/keepass-user");
+        ctx.redirect(adminUrl(ctx, ""));
       }
     });
 
@@ -84,7 +85,7 @@ public class KeePassHandler
         }
         catch (NumberFormatException ignored) {}
       }
-      ctx.redirect("/admin/keepass-user");
+      ctx.redirect(adminUrl(ctx, ""));
     });
 
     // ── QR code ──────────────────────────────────────────────────────────────
@@ -135,6 +136,17 @@ public class KeePassHandler
         ctx.status(500).result(e.getMessage());
       }
     });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private static String adminUrl(Context ctx, String suffix)
+  {
+    String tok = ctx.queryParam("token");
+    String base = "/admin/keepass-user";
+    if (tok == null || tok.isBlank()) return base + suffix;
+    String sep = suffix.contains("?") ? "&" : "?";
+    return base + suffix + sep + "token=" + tok;
   }
 
   // ── Config ────────────────────────────────────────────────────────────────
