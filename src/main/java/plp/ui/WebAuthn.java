@@ -106,7 +106,7 @@ public class WebAuthn
     RegistrationData registrationData = manager.parseRegistrationResponseJSON(json);
 
     // 5. Define origin
-    Origin origin = new Origin(schema + "://" + rpidHost + ":" + port);
+    Origin origin = new Origin(buildOrigin(schema, rpidHost, port));
 
     // 6. ServerProperty
     ServerProperty serverProperty = new ServerProperty(
@@ -259,7 +259,7 @@ public class WebAuthn
     }
 
     // 6. ServerProperty bauen
-    Origin origin = new Origin(schema + "://" + rpidHost + ":" + port);
+    Origin origin = new Origin(buildOrigin(schema, rpidHost, port));
     ServerProperty serverProperty = new ServerProperty(
       origin,
       rpidHost,
@@ -326,6 +326,13 @@ public class WebAuthn
     // 11. Set session
     ctx.sessionAttribute("userId", credStored.userId());
     ctx.json((Map.of("success", true,"reason","none")));
+  }
+
+  private static String buildOrigin(String schema, String host, String port)
+  {
+    if ("https".equals(schema) || "443".equals(port) || "80".equals(port))
+      return schema + "://" + host;
+    return schema + "://" + host + ":" + port;
   }
 
 }
