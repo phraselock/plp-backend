@@ -104,4 +104,4 @@ location /admin/ {
 
 ---
 
-© iPoxo IT GmbH — All rights reserved
+© 2026 iPoxo IT GmbH — All rights reserved
