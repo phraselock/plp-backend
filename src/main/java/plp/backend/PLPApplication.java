@@ -5,7 +5,6 @@ import io.javalin.Javalin;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import plp.handler.ConfigHandler;
 import plp.handler.KeePassHandler;
-import plp.handler.WebAuthnHandler;
 import plp.lib.ConfigPathResolver;
 
 import java.io.IOException;
@@ -121,16 +120,6 @@ public class PLPApplication
 
       config.staticFiles.add(sf ->
       {
-        sf.hostedPath = "/phraselock-idp/js";
-        sf.directory  = "/public/js";
-      });
-      config.staticFiles.add(sf ->
-      {
-        sf.hostedPath = "/phraselock-idp/css";
-        sf.directory  = "/public/css";
-      });
-      config.staticFiles.add(sf ->
-      {
         sf.hostedPath = "/admin/img";
         sf.directory  = "/public/img";
       });
@@ -155,7 +144,6 @@ public class PLPApplication
       });
 
       // Register route handlers
-      new WebAuthnHandler().registerRoutes(config);
       new KeePassHandler().registerRoutes(config);
       new ConfigHandler().registerRoutes(config);
     });
