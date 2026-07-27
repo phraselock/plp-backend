@@ -54,6 +54,13 @@ curl -sSL https://raw.githubusercontent.com/phraselock/plp-backend/main/install.
 
 The installer downloads the latest release from GitHub, installs Java 21 if needed, walks you through all configuration (port, MQTT broker, KeePass, admin token) with a dialog UI, and registers a `plp-backend` systemd service. Re-running the same command upgrades to the latest version while preserving your existing configuration.
 
+To uninstall:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/phraselock/plp-backend/main/uninstall.sh -o uninstall.sh
+sudo bash uninstall.sh
+```
+
 A demo KeePass database (`keepass-phraselock.kdbx`) with sample entries is installed automatically. Open it with KeePassXC using the default password, change it to your own, and update `keepass.properties` accordingly.
 
 ---

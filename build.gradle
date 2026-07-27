@@ -48,7 +48,7 @@ dependencies {
 
 shadowJar {
     archiveBaseName.set('plp-backend')
-    archiveVersion.set('1.3.2')
+    archiveVersion.set('1.3.3')
     archiveClassifier.set('')
     mergeServiceFiles()
 }
