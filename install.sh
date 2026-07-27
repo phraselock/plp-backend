@@ -58,6 +58,7 @@ if [[ -z "$VERSION" || -z "$JAR_URL" ]]; then
 fi
 
 JAR_NAME=$(basename "$JAR_URL")
+DEMO_KDBX_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/keepass-phraselock.kdbx"
 
 # ---------------------------------------------------------------------------
 # Helper: read a key from a properties file
@@ -87,7 +88,7 @@ E_MQTT_PASS=""
 E_MQTT_KEY="/opt/phraselock/certs/mqtt_8883.pkcs8.key"
 E_MQTT_CERT="/opt/phraselock/certs/mqtt_8883.crt"
 
-E_KP_FILE="/opt/phraselock/backend/my-keepass.kdbx"
+E_KP_FILE="/opt/phraselock/backend/keepass-phraselock.kdbx"
 E_KP_PASS=""
 E_KP_UUID="$(cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")"
 
@@ -231,6 +232,12 @@ mkdir -p "$INSTALL_DIR"
 echo "Downloading ${JAR_NAME} (${VERSION})..."
 curl -fsSL "$JAR_URL" -o "$INSTALL_DIR/$JAR_NAME"
 ln -sf "$JAR_NAME" "$INSTALL_DIR/plp-backend.jar"
+
+# Demo KeePass database — only downloaded on fresh install, never overwritten
+if [[ ! -f "$INSTALL_DIR/keepass-phraselock.kdbx" ]]; then
+  echo "Downloading demo KeePass database..."
+  curl -fsSL "$DEMO_KDBX_URL" -o "$INSTALL_DIR/keepass-phraselock.kdbx"
+fi
 
 # ---------------------------------------------------------------------------
 # application.properties
