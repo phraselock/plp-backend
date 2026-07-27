@@ -44,6 +44,18 @@ to be restricted to a single admin via a bookmarked URL containing the token.
 
 ---
 
+## Installation
+
+### One-line install (Debian / Ubuntu / Raspberry Pi OS)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/phraselock/plp-backend/main/install.sh | sudo bash
+```
+
+The installer downloads the latest release from GitHub, installs Java 21 if needed, walks you through all configuration (port, MQTT broker, KeePass, admin token) with a dialog UI, and registers a `plp-backend` systemd service. Re-running the same command upgrades to the latest version while preserving your existing configuration.
+
+---
+
 ## Requirements
 
 - Java 21 or later
