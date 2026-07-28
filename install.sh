@@ -194,8 +194,22 @@ if [[ "$KEEPASS_ENABLED" == true ]]; then
       --inputbox "Path to .kdbx file:" 10 70 "$E_KP_FILE" \
       3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
 
+  # Pre-fill demo password on fresh install and warn the user
+  KP_PASS_DEFAULT="$E_KP_PASS"
+  if [[ -z "$KP_PASS_DEFAULT" ]]; then
+    KP_PASS_DEFAULT='my$ecretPa$$w0rd'
+    "$DIALOG" --title "$TITLE (KeePass)" --msgbox \
+'The demo KeePass database uses the default password:
+
+  my$ecretPa$$w0rd
+
+CHANGE IT immediately after installation!
+Use KeePassXC: Database → Change Master Password,
+then update keepass.properties.' 14 60
+  fi
+
   if ! KP_PASS=$("$DIALOG" --title "$TITLE (KeePass)" \
-      --passwordbox "KeePass master password:" 10 55 \
+      --passwordbox "KeePass master password:" 10 55 "$KP_PASS_DEFAULT" \
       3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
 
   if ! KP_UUID=$("$DIALOG" --title "$TITLE (KeePass)" \
@@ -267,12 +281,28 @@ EOF
 
 # ---------------------------------------------------------------------------
 # mqtt.properties
-# Preserve existing ECC key values on upgrade (they come from PhraseLock-Bridge
-# and cannot be auto-generated here — use /admin/mqttconfig to set them).
+# Generate ECC key pair on first install; preserve on upgrade.
 # ---------------------------------------------------------------------------
-EXISTING_DPRIV=$(_get bes.id.dpriv "$MQTT_PROPS" "changeme")
-EXISTING_XPUBL=$(_get bes.id.xpubl "$MQTT_PROPS" "changeme")
-EXISTING_YPUBL=$(_get bes.id.ypubl "$MQTT_PROPS" "changeme")
+EXISTING_DPRIV=$(_get bes.id.dpriv "$MQTT_PROPS" "")
+EXISTING_XPUBL=$(_get bes.id.xpubl "$MQTT_PROPS" "")
+EXISTING_YPUBL=$(_get bes.id.ypubl "$MQTT_PROPS" "")
+
+if [[ -z "$EXISTING_DPRIV" || "$EXISTING_DPRIV" == "changeme" ]]; then
+  echo "Generating ECC key pair for message signing..."
+  TMP_KEY=$(mktemp)
+  openssl ecparam -name prime256v1 -genkey -noout -out "$TMP_KEY"
+  RAW=$(openssl ec -in "$TMP_KEY" -text -noout 2>/dev/null)
+  EXISTING_DPRIV=$(echo "$RAW" | awk '/^priv:/{found=1; next} found && /^pub:/{found=0} found{print}' | tr -d ' :\n')
+  PUB=$(echo "$RAW"           | awk '/^pub:/{found=1; next}  found && /^ASN1/{found=0}  found{print}' | tr -d ' :\n')
+  PUB_CLEAN="${PUB:2}"
+  LEN=${#PUB_CLEAN}; HALF=$((LEN / 2))
+  EXISTING_XPUBL="${PUB_CLEAN:0:$HALF}"
+  EXISTING_YPUBL="${PUB_CLEAN:$HALF}"
+  rm -f "$TMP_KEY"
+  ECC_STATUS="ECC key pair generated automatically."
+else
+  ECC_STATUS="ECC key pair preserved from existing installation."
+fi
 
 cat > "$MQTT_PROPS" << EOF
 # MQTT Broker Configuration
@@ -365,6 +395,7 @@ $(date)
 ${JAVA_STATUS}
 ${SERVICE_STATUS}
 ${TOKEN_STATUS}
+${ECC_STATUS}
 
 Admin token:
   ${TOKEN_DISPLAY}
@@ -382,14 +413,17 @@ Config files (chmod 600):
   ${INSTALL_DIR}/keepass.properties
 
 ============================================================
-nginx — example block for your server{} section:
+nginx — add to your server{} section:
 
-location /plpbackend/ {
-    proxy_pass          http://localhost:${PORT}/;
+location /admin/ {
+    #if (\$ssl_client_verify != SUCCESS) { return 403; } Not required
+    proxy_pass          http://localhost:${PORT}/admin/;
     proxy_set_header    Host              \$host;
     proxy_set_header    X-Real-IP         \$remote_addr;
     proxy_set_header    X-Forwarded-For   \$proxy_add_x_forwarded_for;
     proxy_set_header    X-Forwarded-Proto \$scheme;
+    proxy_set_header    X-Client-Verify   \$ssl_client_verify;
+    proxy_set_header    X-Client-DN       \$ssl_client_s_dn;
 }
 ============================================================
 
@@ -409,14 +443,6 @@ Admin token (save this!):
   ${ADMIN_TOKEN}"
 fi
 
-ECC_NOTE=""
-if [[ "$EXISTING_DPRIV" == "changeme" ]]; then
-  ECC_NOTE="
-NOTE: ECC signing keys not yet set.
-  Open /admin/mqttconfig to enter them
-  (generate with PhraseLock-Bridge's generateECCKeyPair.sh)."
-fi
-
 "$DIALOG" --title "plp-backend ${VERSION} Setup — Done" --msgbox \
 "${JAVA_STATUS}
 
@@ -425,10 +451,11 @@ plp-backend ${VERSION} installed to:
 
 ${SERVICE_STATUS}
 ${TOKEN_STATUS}${TOKEN_LINE}
+${ECC_STATUS}
 KeePass: ${KEEPASS_ENABLED}
 Peer store: ${PEER_STORE}
 MQTT broker: ${MQTT_URL}
-${ECC_NOTE}
+
 Admin UI:
   http://localhost:${PORT}/admin/config?token=<token>
 

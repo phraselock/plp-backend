@@ -62,7 +62,9 @@ curl -sSL https://raw.githubusercontent.com/phraselock/plp-backend/main/uninstal
 bash uninstall.sh
 ```
 
-A demo KeePass database (`keepass-phraselock.kdbx`) with sample entries is installed automatically. Open it with KeePassXC using the default password, change it to your own, and update `keepass.properties` accordingly.
+A demo KeePass database (`keepass-phraselock.kdbx`) with sample entries is installed automatically.
+
+> **Security:** The demo database uses the default password `my$ecretPa$$w0rd`. Change it immediately after installation — open the database in KeePassXC (*Database → Change Master Password*), then update `keepass.password` in `keepass.properties`.
 
 ---
 
