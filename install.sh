@@ -385,6 +385,25 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 chmod 600 "$APP_PROPS" "$MQTT_PROPS" "$KEEPASS_PROPS"
 
 # ---------------------------------------------------------------------------
+# nginx include block
+# ---------------------------------------------------------------------------
+if [[ -d /etc/nginx/phraselock.d ]]; then
+  cat > /etc/nginx/phraselock.d/plp-backend.conf << EOF
+location /admin/ {
+    if (\$ssl_client_verify != SUCCESS) { return 403; }
+    proxy_pass          http://localhost:${PORT}/admin/;
+    proxy_set_header    Host              \$host;
+    proxy_set_header    X-Real-IP         \$remote_addr;
+    proxy_set_header    X-Forwarded-For   \$proxy_add_x_forwarded_for;
+    proxy_set_header    X-Forwarded-Proto \$scheme;
+    proxy_set_header    X-Client-Verify   \$ssl_client_verify;
+    proxy_set_header    X-Client-DN       \$ssl_client_s_dn;
+}
+EOF
+  nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+fi
+
+# ---------------------------------------------------------------------------
 # systemd service
 # ---------------------------------------------------------------------------
 cat > "${INSTALL_DIR}/plp-backend.service" << EOF
@@ -450,18 +469,8 @@ Config files (chmod 600):
   ${INSTALL_DIR}/keepass.properties
 
 ============================================================
-nginx — add to your server{} section:
-
-location /admin/ {
-    #if (\$ssl_client_verify != SUCCESS) { return 403; } Not required
-    proxy_pass          http://localhost:${PORT}/admin/;
-    proxy_set_header    Host              \$host;
-    proxy_set_header    X-Real-IP         \$remote_addr;
-    proxy_set_header    X-Forwarded-For   \$proxy_add_x_forwarded_for;
-    proxy_set_header    X-Forwarded-Proto \$scheme;
-    proxy_set_header    X-Client-Verify   \$ssl_client_verify;
-    proxy_set_header    X-Client-DN       \$ssl_client_s_dn;
-}
+nginx: /admin/ block written to /etc/nginx/phraselock.d/plp-backend.conf
+(only if PhraseLock-Bridge PLPServer is installed)
 ============================================================
 
 To update: sudo bash install.sh
