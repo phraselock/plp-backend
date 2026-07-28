@@ -273,6 +273,10 @@ if [[ -f "$PKI_MQTT_CA" ]]; then
   else
     CERT_STATUS="MQTT client certificate already exists — preserved."
   fi
+  chown "$SERVICE_USER:$SERVICE_USER" \
+    "${PKI_MQTT_DIR}/mqtt_8883.crt" \
+    "${PKI_MQTT_DIR}/mqtt_8883.key" \
+    "${PKI_MQTT_DIR}/mqtt_8883.pkcs8.key" 2>/dev/null || true
 else
   CERT_STATUS="WARNING: PhraseLock-Bridge MQTT CA not found.
   Run pki-scripts/mqtt/make_ca.sh and make_client.sh 8883 first,
