@@ -408,15 +408,21 @@ fi
 # ---------------------------------------------------------------------------
 cat > "${INSTALL_DIR}/plp-backend.service" << EOF
 [Unit]
-Description=Phrase-Lock Backend Service
+Description=Phrase-Lock PLP Service
 After=network.target
 
 [Service]
-User=${SERVICE_USER}
+Type=simple
 WorkingDirectory=${INSTALL_DIR}
-ExecStart=/usr/bin/java -jar ${INSTALL_DIR}/plp-backend.jar
+ExecStart=/usr/bin/java -jar plp-backend.jar
 Restart=on-failure
-RestartSec=5
+TimeoutStopSec=1
+KillSignal=SIGKILL
+
+User=${SERVICE_USER}
+
+StandardOutput=append:/var/log/plp-backend.log
+StandardError=append:/var/log/plp-backend.log
 
 [Install]
 WantedBy=multi-user.target
