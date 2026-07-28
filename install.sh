@@ -86,8 +86,8 @@ E_PEER_STORE="sqlite"
 E_MQTT_URL="ssl://localhost:8883"
 E_MQTT_USER="plpbackend"
 E_MQTT_PASS=""
-E_MQTT_KEY="/opt/phraselock/certs/mqtt_8883.pkcs8.key"
-E_MQTT_CERT="/opt/phraselock/certs/mqtt_8883.crt"
+E_MQTT_KEY="${INSTALL_DIR}/certs/mqtt_8883.pkcs8.key"
+E_MQTT_CERT="${INSTALL_DIR}/certs/mqtt_8883.crt"
 
 E_KP_FILE="/opt/phraselock/backend/keepass-phraselock.kdbx"
 E_KP_PASS=""
@@ -247,6 +247,23 @@ mkdir -p "$INSTALL_DIR"
 echo "Downloading ${JAR_NAME} (${VERSION})..."
 curl -fsSL "$JAR_URL" -o "$INSTALL_DIR/$JAR_NAME"
 ln -sf "$JAR_NAME" "$INSTALL_DIR/plp-backend.jar"
+
+# ---------------------------------------------------------------------------
+# certs/ directory with symlinks to PKI-generated MQTT client certificates
+# The certs are created by PhraseLock-Bridge's pki-scripts/mqtt/make_client.sh.
+# Symlinks are created unconditionally — they may be dangling until the PKI
+# has been set up, but will work automatically once the certs are in place.
+# ---------------------------------------------------------------------------
+PKI_MQTT_DIR="/opt/phraselock/pki-scripts/mqtt/mqtt_8883"
+CERTS_DIR="${INSTALL_DIR}/certs"
+mkdir -p "$CERTS_DIR"
+ln -sf "${PKI_MQTT_DIR}/mqtt_8883.crt"       "${CERTS_DIR}/mqtt_8883.crt"
+ln -sf "${PKI_MQTT_DIR}/mqtt_8883.key"       "${CERTS_DIR}/mqtt_8883.key"
+ln -sf "${PKI_MQTT_DIR}/mqtt_8883.pkcs8.key" "${CERTS_DIR}/mqtt_8883.pkcs8.key"
+chown -h "$SERVICE_USER:$SERVICE_USER" \
+  "${CERTS_DIR}/mqtt_8883.crt" \
+  "${CERTS_DIR}/mqtt_8883.key" \
+  "${CERTS_DIR}/mqtt_8883.pkcs8.key"
 
 # Demo KeePass database — only downloaded on fresh install, never overwritten
 if [[ ! -f "$INSTALL_DIR/keepass-phraselock.kdbx" ]]; then
