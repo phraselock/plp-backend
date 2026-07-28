@@ -249,12 +249,12 @@ curl -fsSL "$JAR_URL" -o "$INSTALL_DIR/$JAR_NAME"
 ln -sf "$JAR_NAME" "$INSTALL_DIR/plp-backend.jar"
 
 # ---------------------------------------------------------------------------
-# certs/ directory with symlinks to PKI-generated MQTT client certificates
-# The certs are created by PhraseLock-Bridge's pki-scripts/mqtt/make_client.sh.
-# Symlinks are created unconditionally — they may be dangling until the PKI
-# has been set up, but will work automatically once the certs are in place.
+# certs/ directory with symlinks to PKI-generated MQTT client certificates.
+# If the PhraseLock-Bridge MQTT CA already exists, generate the client cert
+# now via make_client.sh. Otherwise leave symlinks dangling and warn.
 # ---------------------------------------------------------------------------
 PKI_MQTT_DIR="/opt/phraselock/pki-scripts/mqtt/mqtt_8883"
+PKI_MQTT_CA="/opt/phraselock/pki-scripts/mqtt/CA/ca.mqtt_8883.pem"
 CERTS_DIR="${INSTALL_DIR}/certs"
 mkdir -p "$CERTS_DIR"
 ln -sf "${PKI_MQTT_DIR}/mqtt_8883.crt"       "${CERTS_DIR}/mqtt_8883.crt"
@@ -264,6 +264,20 @@ chown -h "$SERVICE_USER:$SERVICE_USER" \
   "${CERTS_DIR}/mqtt_8883.crt" \
   "${CERTS_DIR}/mqtt_8883.key" \
   "${CERTS_DIR}/mqtt_8883.pkcs8.key"
+
+if [[ -f "$PKI_MQTT_CA" ]]; then
+  if [[ ! -f "${PKI_MQTT_DIR}/mqtt_8883.crt" ]]; then
+    echo "Generating MQTT client certificate..."
+    (cd /opt/phraselock/pki-scripts/mqtt && bash make_client.sh 8883)
+    CERT_STATUS="MQTT client certificate generated."
+  else
+    CERT_STATUS="MQTT client certificate already exists — preserved."
+  fi
+else
+  CERT_STATUS="WARNING: PhraseLock-Bridge MQTT CA not found.
+  Run pki-scripts/mqtt/make_ca.sh and make_client.sh 8883 first,
+  then re-run this installer or restart plp-backend."
+fi
 
 # Demo KeePass database — only downloaded on fresh install, never overwritten
 if [[ ! -f "$INSTALL_DIR/keepass-phraselock.kdbx" ]]; then
@@ -413,6 +427,7 @@ ${JAVA_STATUS}
 ${SERVICE_STATUS}
 ${TOKEN_STATUS}
 ${ECC_STATUS}
+${CERT_STATUS}
 
 Admin token:
   ${TOKEN_DISPLAY}
@@ -469,6 +484,7 @@ plp-backend ${VERSION} installed to:
 ${SERVICE_STATUS}
 ${TOKEN_STATUS}${TOKEN_LINE}
 ${ECC_STATUS}
+${CERT_STATUS}
 KeePass: ${KEEPASS_ENABLED}
 Peer store: ${PEER_STORE}
 MQTT broker: ${MQTT_URL}
