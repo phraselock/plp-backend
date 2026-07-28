@@ -152,7 +152,7 @@ else
 fi
 
 # Peer config store
-if "$DIALOG" --title "$TITLE" --yesno \
+if "$DIALOG" --title "$TITLE" --defaultno --yesno \
     "Use Redis as peer config store?\n(No = SQLite, recommended for single-host setups)" 9 60; then
   PEER_STORE=redis
 else
