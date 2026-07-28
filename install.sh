@@ -171,7 +171,7 @@ if ! MQTT_USER=$("$DIALOG" --title "$TITLE (MQTT)" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
 
 if ! MQTT_PASS=$("$DIALOG" --title "$TITLE (MQTT)" \
-    --passwordbox "MQTT password:" 10 55 \
+    --passwordbox "MQTT password:" 10 55 "$E_MQTT_PASS" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
 
 if ! MQTT_KEY=$("$DIALOG" --title "$TITLE (MQTT)" \
