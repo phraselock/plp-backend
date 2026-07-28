@@ -387,7 +387,7 @@ chmod 600 "$APP_PROPS" "$MQTT_PROPS" "$KEEPASS_PROPS"
 # ---------------------------------------------------------------------------
 # systemd service
 # ---------------------------------------------------------------------------
-cat > /etc/systemd/system/plp-backend.service << EOF
+cat > "${INSTALL_DIR}/plp-backend.service" << EOF
 [Unit]
 Description=Phrase-Lock Backend Service
 After=network.target
@@ -402,6 +402,7 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
+ln -sf "${INSTALL_DIR}/plp-backend.service" /etc/systemd/system/plp-backend.service
 
 systemctl daemon-reload
 systemctl enable plp-backend >/dev/null 2>&1 || true
