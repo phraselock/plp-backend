@@ -32,6 +32,8 @@ public class KeePassPage
     String xpubl = mqtt.getProperty("bes.id.xpubl", "").trim();
     String ypubl = mqtt.getProperty("bes.id.ypubl", "").trim();
     String uuid  = keepass.getProperty("service.uuid", "").trim();
+    String token = ctx.queryParam("token");
+    token = (token != null && !token.isBlank()) ? token : "";
 
     boolean keysOk = xpubl.length() == 64 && ypubl.length() == 64;
     boolean uuidOk = uuid.length() > 10 && !uuid.contains("x");
@@ -191,7 +193,7 @@ public class KeePassPage
                 .withStyle("display:none;border:1px solid #ddd;border-radius:8px;padding:10px;max-width:320px;")
             )
           ),
-          script(rawHtml(buildJs(xpubl, ypubl, uuid))),
+          script(rawHtml(buildJs(xpubl, ypubl, uuid, token))),
           Nav.footer()
         )
     ));
@@ -220,8 +222,9 @@ public class KeePassPage
     return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'");
   }
 
-  private static String buildJs(String xpubl, String ypubl, String uuid)
+  private static String buildJs(String xpubl, String ypubl, String uuid, String token)
   {
+    String tokenParam = token.isBlank() ? "" : "&token=" + esc(token);
     return
       "var CFG={uuid:\"" + esc(uuid) + "\",x:\"" + esc(xpubl) + "\",y:\"" + esc(ypubl) + "\"};\n" +
       "function updatePreview(){\n" +
@@ -237,7 +240,7 @@ public class KeePassPage
       "  var tagsRaw=document.getElementById('f-tags').value;\n" +
       "  var tags=tagsRaw.split('\\n').map(function(t){return t.trim();}).filter(function(t){return t.length>0;});\n" +
       "  var img=document.getElementById('qrImage');\n" +
-      "  img.src='/admin/keepass-user/qr.png?name='+label+'&tags='+encodeURIComponent(tags.join(','));\n" +
+      "  img.src='/admin/keepass-user/qr.png?name='+label+'&tags='+encodeURIComponent(tags.join(','))+'" + tokenParam + "';\n" +
       "  img.style.display='block';\n" +
       "}\n" +
       "function cloneRow(tr){\n" +
