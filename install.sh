@@ -11,6 +11,7 @@ GITHUB_REPO="phraselock/plp-backend"
 SERVICE_NAME="plp-backend"
 INSTALL_DIR="/opt/phraselock/backend"
 SERVICE_USER="phraselock"
+SUMMARY_FILE="/opt/phraselock/backend/backend-setup.txt"
 
 # ---------------------------------------------------------------------------
 # Root check
@@ -349,7 +350,57 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Summary
+# Summary text file
+# ---------------------------------------------------------------------------
+TOKEN_DISPLAY="(preserved — see ${INSTALL_DIR}/application.properties)"
+if [[ "$TOKEN_IS_NEW" == true ]]; then
+  TOKEN_DISPLAY="${ADMIN_TOKEN}"
+fi
+
+cat > "$SUMMARY_FILE" << EOF
+plp-backend ${VERSION} — Installation Summary
+$(date)
+============================================================
+
+${JAVA_STATUS}
+${SERVICE_STATUS}
+${TOKEN_STATUS}
+
+Admin token:
+  ${TOKEN_DISPLAY}
+
+Admin UI:
+  http://localhost:${PORT}/admin/config?token=${ADMIN_TOKEN}
+
+KeePass integration: ${KEEPASS_ENABLED}
+Peer config store:   ${PEER_STORE}
+MQTT broker:         ${MQTT_URL}
+
+Config files (chmod 600):
+  ${INSTALL_DIR}/application.properties
+  ${INSTALL_DIR}/mqtt.properties
+  ${INSTALL_DIR}/keepass.properties
+
+============================================================
+nginx — example block for your server{} section:
+
+location /plpbackend/ {
+    proxy_pass          http://localhost:${PORT}/;
+    proxy_set_header    Host              \$host;
+    proxy_set_header    X-Real-IP         \$remote_addr;
+    proxy_set_header    X-Forwarded-For   \$proxy_add_x_forwarded_for;
+    proxy_set_header    X-Forwarded-Proto \$scheme;
+}
+============================================================
+
+To update: sudo bash install.sh
+To remove:  sudo bash uninstall.sh
+EOF
+
+chmod 600 "$SUMMARY_FILE"
+
+# ---------------------------------------------------------------------------
+# Summary dialog
 # ---------------------------------------------------------------------------
 TOKEN_LINE=""
 if [[ "$TOKEN_IS_NEW" == true ]]; then
@@ -386,4 +437,8 @@ Config files (chmod 600):
   ${INSTALL_DIR}/mqtt.properties
   ${INSTALL_DIR}/keepass.properties
 
-To update later, just re-run this installer." 34 78
+Full summary saved to:
+  ${SUMMARY_FILE}
+
+To update: sudo bash install.sh
+To remove:  sudo bash uninstall.sh" 36 78
