@@ -1,9 +1,8 @@
-# plp-backend
+# Your backend service - plp-backend
 
 Backend service for the **PhraseLock** ecosystem.
 
-plp-backend is a lightweight Java service that acts as the central hub between
-FIDO2/WebAuthn clients, a KeePass credential store, and an MQTT broker. It is
+plp-backend is a lightweight Java service that acts as the central hub for KeePass data files as a credential storage for your credentials. It is
 distributed as a self-contained fat JAR and is designed to run on a Raspberry Pi
 or any Linux host sitting inside a local network, behind an nginx reverse proxy.
 
