@@ -253,8 +253,14 @@ ln -sf "$JAR_NAME" "$INSTALL_DIR/plp-backend.jar"
 # If the PhraseLock-Bridge MQTT CA already exists, generate the client cert
 # now via make_client.sh. Otherwise leave symlinks dangling and warn.
 # ---------------------------------------------------------------------------
-PKI_MQTT_DIR="/opt/phraselock/pki-scripts/mqtt/mqtt_8883"
-PKI_MQTT_CA="/opt/phraselock/pki-scripts/mqtt/CA/ca.mqtt_8883.pem"
+# "clients-mqtt", not "mqtt" — PhraseLock-Bridge/PLPServer renamed this
+# directory (it only ever issued client certificates, never a server one,
+# so the old name was misleading). A hardcoded old path here is exactly
+# what broke plp-backend after that rename: the symlinks below kept
+# pointing at a directory that no longer existed, invisible until the next
+# restart tried to read through them.
+PKI_MQTT_DIR="/opt/phraselock/pki-scripts/clients-mqtt/mqtt_8883"
+PKI_MQTT_CA="/opt/phraselock/pki-scripts/clients-mqtt/CA/ca.mqtt_8883.pem"
 CERTS_DIR="${INSTALL_DIR}/certs"
 mkdir -p "$CERTS_DIR"
 ln -sf "${PKI_MQTT_DIR}/mqtt_8883.crt"       "${CERTS_DIR}/mqtt_8883.crt"
@@ -268,7 +274,7 @@ chown -h "$SERVICE_USER:$SERVICE_USER" \
 if [[ -f "$PKI_MQTT_CA" ]]; then
   if [[ ! -f "${PKI_MQTT_DIR}/mqtt_8883.crt" ]]; then
     echo "Generating MQTT client certificate..."
-    (cd /opt/phraselock/pki-scripts/mqtt && bash make_client.sh 8883)
+    (cd /opt/phraselock/pki-scripts/clients-mqtt && bash make_client.sh 8883)
     CERT_STATUS="MQTT client certificate generated."
   else
     CERT_STATUS="MQTT client certificate already exists — preserved."
@@ -279,7 +285,7 @@ if [[ -f "$PKI_MQTT_CA" ]]; then
     "${PKI_MQTT_DIR}/mqtt_8883.pkcs8.key" 2>/dev/null || true
 else
   CERT_STATUS="WARNING: PhraseLock-Bridge MQTT CA not found.
-  Run pki-scripts/mqtt/make_ca.sh and make_client.sh 8883 first,
+  Run pki-scripts/clients-mqtt/make_ca.sh and make_client.sh 8883 first,
   then re-run this installer or restart plp-backend."
 fi
 

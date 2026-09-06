@@ -88,6 +88,16 @@ public class MqttService implements MqttCallback
   // Dynamically registered topics — re-subscribed on reconnect
   private final List<String> subscribedTopics = new java.util.concurrent.CopyOnWriteArrayList<>();
   private MqttConnectionOptions connectOpts;
+
+  // Paho's own automaticReconnect (see connect()) leaks a thread per
+  // internal reconnect attempt in this client version (1.2.5, unpatched —
+  // no newer release exists). Reconnects are driven entirely by our own
+  // connectWithRetry() instead, triggered from disconnected() below — these
+  // three flags replace what we used to get for free from Paho's own
+  // reconnect bookkeeping.
+  private final java.util.concurrent.atomic.AtomicBoolean reconnecting = new java.util.concurrent.atomic.AtomicBoolean(false);
+  private volatile boolean hasConnectedBefore = false;
+  private volatile boolean shuttingDown = false;
   private int retryIntervalS = 30;
 
   // ── Cached config ─────────────────────────────────────────────────────────
@@ -115,7 +125,9 @@ public class MqttService implements MqttCallback
     retryIntervalS     = Integer.parseInt(config.getProperty("connect.retry.seconds", "30"));
 
     connectOpts = new MqttConnectionOptions();
-    connectOpts.setAutomaticReconnect(true);
+    // false, deliberately — see the field comments above connectWithRetry()
+    // does our own reconnecting instead, triggered from disconnected().
+    connectOpts.setAutomaticReconnect(false);
     connectOpts.setCleanStart(true);
     connectOpts.setKeepAliveInterval(keepAlive);
 
@@ -250,24 +262,47 @@ public class MqttService implements MqttCallback
     }
   }
 
+  /**
+   * Connects (or reconnects) with retry, on its own virtual thread. Called
+   * once from connect(), and again from disconnected() every time the
+   * connection is lost — automaticReconnect is off, so nothing else
+   * triggers a reconnect. The AtomicBoolean guard means a second call
+   * while one is already retrying is a harmless no-op, not a second
+   * competing retry loop.
+   */
   private void connectWithRetry()
   {
+    if (!reconnecting.compareAndSet(false, true)) return;
+
     Thread.ofVirtual().name("mqtt-connect").start(() ->
     {
-      while (!Thread.interrupted())
+      try
       {
-        try
+        while (!Thread.interrupted())
         {
-          client.connect(connectOpts);
-          for (String t : subscribedTopics) client.subscribe(t, 1);
-          Log.i("[MQTT] Connected: " + brokerUrl + " | keepalive=" + connectOpts.getKeepAliveInterval() + "s");
-          return; // Paho handles reconnect from here
+          try
+          {
+            client.connect(connectOpts);
+            for (String t : subscribedTopics) client.subscribe(t, 1);
+            Log.i("[MQTT] Connected: " + brokerUrl + " | keepalive=" + connectOpts.getKeepAliveInterval() + "s");
+
+            if (!hasConnectedBefore)
+            {
+              hasConnectedBefore = true;
+              onConnectedListeners.forEach(l -> l.onConnected(this));
+            }
+            return;
+          }
+          catch (MqttException e)
+          {
+            Log.e("[MQTT] Connection failed, retry in " + retryIntervalS + "s: " + e.getMessage());
+            try { Thread.sleep(retryIntervalS * 1000L); } catch (InterruptedException ie) { return; }
+          }
         }
-        catch (MqttException e)
-        {
-          Log.e("[MQTT] Connection failed, retry in " + retryIntervalS + "s: " + e.getMessage());
-          try { Thread.sleep(retryIntervalS * 1000L); } catch (InterruptedException ie) { return; }
-        }
+      }
+      finally
+      {
+        reconnecting.set(false);
       }
     });
   }
@@ -295,6 +330,9 @@ public class MqttService implements MqttCallback
   public void disconnect()
   {
     if (client == null) return;
+    // Set first — disconnected() below must not treat this deliberate
+    // shutdown as a dropped connection and try to reconnect.
+    shuttingDown = true;
     try { client.disconnect(); } catch (MqttException ignored) {}
     try { client.close();      } catch (MqttException ignored) {}
   }
@@ -309,36 +347,22 @@ public class MqttService implements MqttCallback
   @Override
   public void connectComplete(boolean reconnect, String serverURI)
   {
-    String type = reconnect ? "Reconnected" : "Connected";
-    Log.i("[MQTT] " + type + " to " + serverURI);
-
-    // Notify listeners — on first connect they subscribe their topics
-    if (!reconnect)
-      onConnectedListeners.forEach(l -> l.onConnected(this));
-
-    if (reconnect)
-    {
-      // CleanStart=true clears the session on the broker —
-      // re-subscribe to all registered topics after every reconnect
-      for (String t : subscribedTopics)
-      {
-        try
-        {
-          client.subscribe(t, 1);
-          Log.i("[MQTT] Re-subscribed: " + t);
-        }
-        catch (MqttException e)
-        {
-          Log.e("[MQTT] Re-subscribe failed for " + t + ": " + e.getMessage());
-        }
-      }
-    }
+    // Just logging — with automaticReconnect off, Paho never drives a
+    // reconnect itself, so this "reconnect" flag isn't meaningful here.
+    // Re-subscribing and the one-time onConnectedListeners notification are
+    // both handled in connectWithRetry(), which is what actually calls
+    // client.connect() (first time and every time after).
+    Log.i("[MQTT] Connected to " + serverURI);
   }
 
   @Override
   public void disconnected(MqttDisconnectResponse response)
   {
     Log.e("[MQTT] Connection lost (RC=" + response.getReturnCode() + "): " + response.getException().getMessage());
+    // Fires for our own deliberate disconnect() too, not just a dropped
+    // connection — shuttingDown distinguishes the two so we don't try to
+    // reconnect right after a requested shutdown.
+    if (!shuttingDown) connectWithRetry();
   }
 
   @Override
