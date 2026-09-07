@@ -96,12 +96,26 @@ JAR_NAME=$(basename "$JAR_URL")
 DEMO_KDBX_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/keepass-phraselock.kdbx"
 
 # ---------------------------------------------------------------------------
-# Helper: read a key from a properties file
+# Helpers
 # ---------------------------------------------------------------------------
+
+# Reads a key from a properties file. tr -d '\r' guards against a
+# properties file with CRLF line endings (e.g. edited on Windows) — grep
+# matches the whole line including a trailing \r, and cut only splits on
+# "=", so without this the extracted value would silently carry that \r
+# into everything it's later embedded in (see strip_cr below for the other
+# place this class of bug shows up).
 _get() {
   local key="$1" file="$2" default="${3:-}"
-  grep "^${key}=" "$file" 2>/dev/null | cut -d= -f2- || echo "$default"
+  grep "^${key}=" "$file" 2>/dev/null | cut -d= -f2- | tr -d '\r' || echo "$default"
 }
+
+# Strips a trailing \r some terminals/whiptail leave on captured Enter-
+# confirmed input: "$()" strips trailing \n but not a \r right before it,
+# so "8080\r\n" survives capture as "8080\r" — a real case we hit, it broke
+# a generated nginx proxy_pass line with an invisible embedded CR. Applied
+# to every dialog-captured value below.
+strip_cr() { printf '%s' "${1%$'\r'}"; }
 
 # ---------------------------------------------------------------------------
 # Read existing config (upgrade-friendly)
@@ -158,14 +172,17 @@ TITLE="plp-backend ${VERSION} Setup"
 if ! PORT=$("$DIALOG" --title "$TITLE" \
     --inputbox "HTTP port for plp-backend:" 10 55 "$E_PORT" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+PORT=$(strip_cr "$PORT")
 
 if ! ALLOWED_IPS=$("$DIALOG" --title "$TITLE" \
     --inputbox "Allowed IPs (comma-separated):" 10 70 "$E_IPS" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+ALLOWED_IPS=$(strip_cr "$ALLOWED_IPS")
 
 if ! MAX_THREADS=$("$DIALOG" --title "$TITLE" \
     --inputbox "Jetty max threads:" 10 55 "$E_MAX_THREADS" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+MAX_THREADS=$(strip_cr "$MAX_THREADS")
 
 # Admin token — generate once, never overwrite
 if [[ -z "$E_ADMIN_TOKEN" ]]; then
@@ -199,22 +216,27 @@ fi
 if ! MQTT_URL=$("$DIALOG" --title "$TITLE (MQTT)" \
     --inputbox "MQTT broker URL (e.g. ssl://your.host:8883):" 10 65 "$E_MQTT_URL" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+MQTT_URL=$(strip_cr "$MQTT_URL")
 
 if ! MQTT_USER=$("$DIALOG" --title "$TITLE (MQTT)" \
     --inputbox "MQTT username:" 10 55 "$E_MQTT_USER" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+MQTT_USER=$(strip_cr "$MQTT_USER")
 
 if ! MQTT_PASS=$("$DIALOG" --title "$TITLE (MQTT)" \
     --passwordbox "MQTT password:" 10 55 "$E_MQTT_PASS" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+MQTT_PASS=$(strip_cr "$MQTT_PASS")
 
 if ! MQTT_KEY=$("$DIALOG" --title "$TITLE (MQTT)" \
     --inputbox "Path to mTLS client private key (.pkcs8.key):" 10 70 "$E_MQTT_KEY" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+MQTT_KEY=$(strip_cr "$MQTT_KEY")
 
 if ! MQTT_CERT=$("$DIALOG" --title "$TITLE (MQTT)" \
     --inputbox "Path to mTLS client certificate (.crt):" 10 70 "$E_MQTT_CERT" \
     3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+MQTT_CERT=$(strip_cr "$MQTT_CERT")
 
 # ---------------------------------------------------------------------------
 # Dialog: KeePass settings (only when enabled)
@@ -227,6 +249,7 @@ if [[ "$KEEPASS_ENABLED" == true ]]; then
   if ! KP_FILE=$("$DIALOG" --title "$TITLE (KeePass)" \
       --inputbox "Path to .kdbx file:" 10 70 "$E_KP_FILE" \
       3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+  KP_FILE=$(strip_cr "$KP_FILE")
 
   # Pre-fill demo password on fresh install and warn the user
   KP_PASS_DEFAULT="$E_KP_PASS"
@@ -245,10 +268,12 @@ then update keepass.properties.' 14 60
   if ! KP_PASS=$("$DIALOG" --title "$TITLE (KeePass)" \
       --passwordbox "KeePass master password:" 10 55 "$KP_PASS_DEFAULT" \
       3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+  KP_PASS=$(strip_cr "$KP_PASS")
 
   if ! KP_UUID=$("$DIALOG" --title "$TITLE (KeePass)" \
       --inputbox "Service UUID (shown in QR codes on mobile app):" 10 70 "$E_KP_UUID" \
       3>&1 1>&2 2>&3); then echo "Aborted." >&2; exit 1; fi
+  KP_UUID=$(strip_cr "$KP_UUID")
 fi
 
 # ---------------------------------------------------------------------------
