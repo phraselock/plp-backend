@@ -7,6 +7,28 @@
 #
 set -euo pipefail
 
+# When piped straight into bash ("curl | sudo bash", no script-file
+# argument), bash reads this entire script from stdin as it executes —
+# which then keeps competing with whiptail for that same stdin further
+# down, breaking keyboard input in its dialogs (Tab to move between
+# fields/buttons especially — a real case we hit). Re-exec from a real,
+# freshly-downloaded copy of ourselves instead: bash then reads its
+# commands from disk, leaving stdin free for whiptail. Skipped entirely
+# when stdin already is a terminal (e.g. downloaded first, then run
+# directly) — nothing to work around in that case.
+if [[ ! -t 0 ]]; then
+  TMP_SELF=$(mktemp)
+  curl -fsSL "https://raw.githubusercontent.com/phraselock/plp-backend/main/install.sh" -o "$TMP_SELF"
+  chmod +x "$TMP_SELF"
+  # < /dev/tty matters here, not just cosmetic: without it, stdin stays
+  # whatever it was before (the now-drained curl pipe), so "[[ ! -t 0 ]]"
+  # would still be true on the re-exec'd copy too and this would loop
+  # forever, re-downloading and re-exec'ing on every pass. Safe to redirect
+  # now because bash reads the script from the file argument this time,
+  # not from stdin — freeing stdin up for the terminal.
+  exec bash "$TMP_SELF" "$@" < /dev/tty
+fi
+
 GITHUB_REPO="phraselock/plp-backend"
 SERVICE_NAME="plp-backend"
 INSTALL_DIR="/opt/phraselock/backend"
