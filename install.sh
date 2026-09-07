@@ -3,30 +3,46 @@
 # Downloads the latest release from GitHub and installs it as a systemd service.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/phraselock/plp-backend/main/install.sh | sudo bash
+#   curl -sSL https://raw.githubusercontent.com/phraselock/plp-backend/main/install.sh | bash
 #
 set -euo pipefail
 
-# When piped straight into bash ("curl | sudo bash", no script-file
-# argument), bash reads this entire script from stdin as it executes —
-# which then keeps competing with whiptail for that same stdin further
-# down, breaking keyboard input in its dialogs (Tab to move between
-# fields/buttons especially — a real case we hit). Re-exec from a real,
-# freshly-downloaded copy of ourselves instead: bash then reads its
-# commands from disk, leaving stdin free for whiptail. Skipped entirely
-# when stdin already is a terminal (e.g. downloaded first, then run
-# directly) — nothing to work around in that case.
-if [[ ! -t 0 ]]; then
+# Root is checked here rather than assumed via a hardcoded "sudo" in the
+# documented one-liner: plenty of real servers already have root logged in
+# by default (the account that exists from day one) and never had sudo
+# installed at all — "curl | sudo bash" then fails at the shell level,
+# before this script ever runs, with a bare "sudo: command not found".
+NEED_SUDO=false
+if [[ "$(id -u)" -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    NEED_SUDO=true
+  else
+    echo "Error: this installer must run as root, and 'sudo' is not installed on this system. Log in as root directly and re-run." >&2
+    exit 1
+  fi
+fi
+
+# Also re-exec when piped straight into bash ("curl | bash", no
+# script-file argument): bash reads this entire script from stdin as it
+# executes, which then keeps competing with whiptail for that same stdin
+# further down, breaking keyboard input in its dialogs (Tab to move
+# between fields/buttons especially — a real case we hit). Both cases
+# share one re-exec so a non-root user on a pipe doesn't trigger it twice.
+if [[ "$NEED_SUDO" == true || ! -t 0 ]]; then
   TMP_SELF=$(mktemp)
   curl -fsSL "https://raw.githubusercontent.com/phraselock/plp-backend/main/install.sh" -o "$TMP_SELF"
   chmod +x "$TMP_SELF"
   # < /dev/tty matters here, not just cosmetic: without it, stdin stays
-  # whatever it was before (the now-drained curl pipe), so "[[ ! -t 0 ]]"
-  # would still be true on the re-exec'd copy too and this would loop
-  # forever, re-downloading and re-exec'ing on every pass. Safe to redirect
-  # now because bash reads the script from the file argument this time,
-  # not from stdin — freeing stdin up for the terminal.
-  exec bash "$TMP_SELF" "$@" < /dev/tty
+  # whatever it was before (the now-drained curl pipe, if piped), so this
+  # guard would keep re-triggering on every re-exec, looping forever.
+  # Safe to redirect now because bash reads the script from the file
+  # argument this time, not from stdin — freeing stdin up for the
+  # terminal (and for sudo's own password prompt, which wants one too).
+  if [[ "$NEED_SUDO" == true ]]; then
+    exec sudo bash "$TMP_SELF" "$@" < /dev/tty
+  else
+    exec bash "$TMP_SELF" "$@" < /dev/tty
+  fi
 fi
 
 GITHUB_REPO="phraselock/plp-backend"
@@ -35,13 +51,9 @@ INSTALL_DIR="/opt/phraselock/backend"
 SERVICE_USER="phraselock"
 SUMMARY_FILE="/opt/phraselock/backend/backend-setup.txt"
 
-# ---------------------------------------------------------------------------
-# Root check
-# ---------------------------------------------------------------------------
-if [[ "$(id -u)" -ne 0 ]]; then
-  echo "Error: this installer must run as root (sudo)." >&2
-  exit 1
-fi
+# Root is guaranteed by this point — either we already were, or the guard
+# above re-exec'd us through sudo (or exited with a clear error if sudo
+# wasn't available).
 
 # ---------------------------------------------------------------------------
 # Dialog tool
